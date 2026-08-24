@@ -1,0 +1,129 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/theme.json",
+  "version": 2,
+  "settings": {
+    "appearanceTools": true,
+    "layout": {
+      "contentSize": "760px",
+      "wideSize": "960px"
+    },
+    "color": {
+      "custom": true,
+      "customGradient": true,
+      "defaultPalette": false,
+      "palette": [
+        {
+          "slug": "strawberry",
+          "color": "#d8757f",
+          "name": "草莓粉"
+        },
+        {
+          "slug": "honey",
+          "color": "#d9a441",
+          "name": "蜂蜜黄"
+        },
+        {
+          "slug": "leaf",
+          "color": "#8ca36b",
+          "name": "叶子绿"
+        },
+        {
+          "slug": "sky",
+          "color": "#8aa9bb",
+          "name": "天空蓝"
+        },
+        {
+          "slug": "paper",
+          "color": "#f7efe2",
+          "name": "手账纸"
+        },
+        {
+          "slug": "cream",
+          "color": "#fffdf8",
+          "name": "奶油白"
+        },
+        {
+          "slug": "ink",
+          "color": "#4f413b",
+          "name": "咖啡墨"
+        }
+      ]
+    },
+    "spacing": {
+      "blockGap": true,
+      "margin": true,
+      "padding": true,
+      "units": ["px", "em", "rem", "%", "vw"]
+    },
+    "typography": {
+      "customFontSize": true,
+      "dropCap": true,
+      "fluid": true,
+      "fontSizes": [
+        {
+          "slug": "small",
+          "size": "0.82rem",
+          "name": "小纸条"
+        },
+        {
+          "slug": "medium",
+          "size": "1rem",
+          "name": "正文"
+        },
+        {
+          "slug": "large",
+          "size": "1.55rem",
+          "name": "小标题"
+        },
+        {
+          "slug": "x-large",
+          "size": "2.35rem",
+          "name": "大标题"
+        }
+      ]
+    }
+  },
+  "styles": {
+    "color": {
+      "background": "#f7efe2",
+      "text": "#4f413b"
+    },
+    "spacing": {
+      "blockGap": "1.4rem"
+    },
+    "typography": {
+      "fontFamily": "\"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+      "lineHeight": "1.8"
+    },
+    "elements": {
+      "button": {
+        "border": {
+          "radius": "999px"
+        },
+        "color": {
+          "background": "#d8757f",
+          "text": "#ffffff"
+        },
+        "typography": {
+          "fontWeight": "700"
+        }
+      },
+      "heading": {
+        "color": {
+          "text": "#4f413b"
+        },
+        "typography": {
+          "fontFamily": "\"STKaiti\", \"KaiTi\", \"FangSong\", cursive",
+          "fontWeight": "700",
+          "lineHeight": "1.3"
+        }
+      },
+      "link": {
+        "color": {
+          "text": "#a74f5a"
+        }
+      }
+    }
+  }
+}
+

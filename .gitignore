@@ -1,0 +1,14 @@
+# Local build, preview and backup artifacts
+/releases/
+/backups/
+/previews/
+/build/
+/dist/
+*.zip
+release-info.txt
+build-release.ps1
+generate-theme-screenshot.py
+__pycache__/
+*.py[cod]
+.DS_Store
+Thumbs.db
