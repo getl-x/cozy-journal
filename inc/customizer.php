@@ -194,6 +194,91 @@ function cozy_journal_customize_register( $wp_customize ) {
 		)
 	);
 
+	/* Front-end writing desk. */
+	$wp_customize->add_section(
+		'cozy_journal_writing_section',
+		array(
+			'title'       => __( '前台写作', 'cozy-journal' ),
+			'description' => __( '设置 /write/ 手账写作台、快捷入口和草稿自动保存。', 'cozy-journal' ),
+			'panel'       => 'cozy_journal_theme_options',
+			'priority'    => 15,
+		)
+	);
+
+	$writing_toggles = array(
+		'cozy_journal_enable_writing_desk' => array(
+			'label'       => __( '启用前台手账写作台', 'cozy-journal' ),
+			'description' => __( '拥有文章编辑权限的登录用户可以访问 /write/。', 'cozy-journal' ),
+		),
+		'cozy_journal_show_write_link' => array(
+			'label'       => __( '在页头显示“写文章”', 'cozy-journal' ),
+			'description' => __( '只对已登录并拥有文章编辑权限的用户显示。', 'cozy-journal' ),
+		),
+		'cozy_journal_allow_featured_upload' => array(
+			'label'       => __( '允许上传特色图片', 'cozy-journal' ),
+			'description' => __( '当前账号仍需具备 WordPress 媒体上传权限。', 'cozy-journal' ),
+		),
+	);
+
+	foreach ( $writing_toggles as $setting_id => $args ) {
+		$wp_customize->add_setting(
+			$setting_id,
+			array(
+				'default'           => true,
+				'sanitize_callback' => 'cozy_journal_sanitize_checkbox',
+			)
+		);
+		$wp_customize->add_control(
+			$setting_id,
+			array(
+				'label'       => $args['label'],
+				'description' => $args['description'],
+				'section'     => 'cozy_journal_writing_section',
+				'type'        => 'checkbox',
+			)
+		);
+	}
+
+	$wp_customize->add_setting(
+		'cozy_journal_writing_autosave_interval',
+		array(
+			'default'           => '30',
+			'sanitize_callback' => 'cozy_journal_sanitize_select',
+		)
+	);
+	$wp_customize->add_control(
+		'cozy_journal_writing_autosave_interval',
+		array(
+			'label'       => __( '草稿自动保存间隔', 'cozy-journal' ),
+			'description' => __( '只自动保存新文章、草稿和待审核文章。', 'cozy-journal' ),
+			'section'     => 'cozy_journal_writing_section',
+			'type'        => 'select',
+			'choices'     => array(
+				'30'  => __( '每 30 秒', 'cozy-journal' ),
+				'60'  => __( '每 60 秒', 'cozy-journal' ),
+				'120' => __( '每 2 分钟', 'cozy-journal' ),
+				'0'   => __( '关闭自动保存', 'cozy-journal' ),
+			),
+		)
+	);
+
+	$wp_customize->add_setting(
+		'cozy_journal_writing_intro',
+		array(
+			'default'           => __( '安静写下此刻，剩下的交给时间收藏。', 'cozy-journal' ),
+			'sanitize_callback' => 'sanitize_text_field',
+		)
+	);
+	$wp_customize->add_control(
+		'cozy_journal_writing_intro',
+		array(
+			'label'       => __( '写作台顶部寄语', 'cozy-journal' ),
+			'description' => __( '显示在“返回手账首页”下方。', 'cozy-journal' ),
+			'section'     => 'cozy_journal_writing_section',
+			'type'        => 'text',
+		)
+	);
+
 	/* Colors and type. */
 	$wp_customize->add_section(
 		'cozy_journal_style_section',

@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'COZY_JOURNAL_VERSION' ) ) {
-	define( 'COZY_JOURNAL_VERSION', '1.1.0' );
+	define( 'COZY_JOURNAL_VERSION', '1.2.0' );
 }
 
 if ( ! defined( 'COZY_JOURNAL_NAME' ) ) {
@@ -256,4 +256,5 @@ function cozy_journal_get_stickers() {
 require get_template_directory() . '/inc/template-tags.php';
 require get_template_directory() . '/inc/privacy.php';
 require get_template_directory() . '/inc/theme-options.php';
+require get_template_directory() . '/inc/frontend-editor.php';
 require get_template_directory() . '/inc/customizer.php';

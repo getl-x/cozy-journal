@@ -4,7 +4,7 @@ Theme URI: https://github.com/getl-x/cozy-journal
 Author: GetL-X
 Author URI: https://github.com/getl-x/cozy-journal
 Description: A cozy journal-style WordPress theme for personal blogs, stories and everyday notes.
-Version: 1.1.0
+Version: 1.2.0
 Requires at least: 6.0
 Requires PHP: 7.4
 License: GNU General Public License v2 or later
@@ -454,6 +454,29 @@ hr {
 .primary-navigation ul ul a {
 	padding: 8px 10px;
 	font-size: 0.95rem;
+}
+
+.header-write-link {
+	display: inline-flex;
+	min-height: 39px;
+	align-items: center;
+	gap: 5px;
+	padding: 6px 13px;
+	border: 1px dashed var(--journal-primary);
+	border-radius: 999px;
+	background: rgba(216, 117, 127, 0.08);
+	color: var(--journal-primary-dark);
+	font-family: var(--journal-heading-font);
+	font-size: 0.82rem;
+	font-weight: 700;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.header-write-link:hover,
+.header-write-link[aria-current="page"] {
+	background: var(--journal-primary);
+	color: #fff;
 }
 
 .menu-toggle {
@@ -1823,6 +1846,10 @@ input[type="submit"]:hover {
 -------------------------------------------------------------- */
 
 @media (max-width: 1040px) {
+	.header-write-link {
+		display: none;
+	}
+
 	.content-with-sidebar {
 		grid-template-columns: minmax(0, 1fr) 270px;
 		gap: 28px;

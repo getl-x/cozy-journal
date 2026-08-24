@@ -64,6 +64,11 @@
 				);
 				?>
 			</nav>
+
+			<?php if ( function_exists( 'cozy_journal_writing_desk_enabled' ) && cozy_journal_writing_desk_enabled() && get_theme_mod( 'cozy_journal_show_write_link', true ) && is_user_logged_in() && current_user_can( 'edit_posts' ) ) : ?>
+				<a class="header-write-link" href="<?php echo esc_url( cozy_journal_get_write_url() ); ?>" <?php echo cozy_journal_is_writing_desk() ? 'aria-current="page"' : ''; ?>>
+					<span aria-hidden="true">✎</span><?php esc_html_e( '写文章', 'cozy-journal' ); ?>
+				</a>
+			<?php endif; ?>
 		</div>
 	</header>
-

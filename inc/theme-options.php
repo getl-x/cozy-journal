@@ -52,6 +52,56 @@ function cozy_journal_get_theme_option_sections() {
 				),
 			),
 		),
+		'writing' => array(
+			'page'        => 'cozy-journal-settings-writing',
+			'title'       => __( '前台写作', 'cozy-journal' ),
+			'eyebrow'     => __( 'Writing desk', 'cozy-journal' ),
+			'description' => __( '控制网站前台手账写作台、自动保存和快捷入口。', 'cozy-journal' ),
+			'icon'        => 'dashicons-edit-page',
+			'fields'      => array(
+				'cozy_journal_enable_writing_desk' => array(
+					'label'       => __( '启用前台手账写作台', 'cozy-journal' ),
+					'description' => __( '启用后，拥有文章编辑权限的登录用户可以访问 /write/。', 'cozy-journal' ),
+					'type'        => 'checkbox',
+					'default'     => true,
+					'group'       => __( '入口与权限', 'cozy-journal' ),
+				),
+				'cozy_journal_show_write_link' => array(
+					'label'       => __( '在页头显示“写文章”', 'cozy-journal' ),
+					'description' => __( '只对已登录并拥有文章编辑权限的用户显示。', 'cozy-journal' ),
+					'type'        => 'checkbox',
+					'default'     => true,
+					'group'       => __( '入口与权限', 'cozy-journal' ),
+				),
+				'cozy_journal_allow_featured_upload' => array(
+					'label'       => __( '允许上传特色图片', 'cozy-journal' ),
+					'description' => __( '还需要当前账号具备 WordPress 媒体上传权限。', 'cozy-journal' ),
+					'type'        => 'checkbox',
+					'default'     => true,
+					'group'       => __( '入口与权限', 'cozy-journal' ),
+				),
+				'cozy_journal_writing_autosave_interval' => array(
+					'label'       => __( '草稿自动保存间隔', 'cozy-journal' ),
+					'description' => __( '自动保存只处理新文章、草稿和待审核文章，不会自动改动已发布文章。', 'cozy-journal' ),
+					'type'        => 'select',
+					'default'     => '30',
+					'choices'     => array(
+						'30'  => __( '每 30 秒', 'cozy-journal' ),
+						'60'  => __( '每 60 秒', 'cozy-journal' ),
+						'120' => __( '每 2 分钟', 'cozy-journal' ),
+						'0'   => __( '关闭自动保存', 'cozy-journal' ),
+					),
+					'group'       => __( '写作体验', 'cozy-journal' ),
+				),
+				'cozy_journal_writing_intro' => array(
+					'label'       => __( '写作台顶部寄语', 'cozy-journal' ),
+					'description' => __( '显示在“返回手账首页”下方。', 'cozy-journal' ),
+					'type'        => 'text',
+					'default'     => __( '安静写下此刻，剩下的交给时间收藏。', 'cozy-journal' ),
+					'group'       => __( '写作体验', 'cozy-journal' ),
+				),
+			),
+		),
 		'global' => array(
 			'page'        => 'cozy-journal-settings-global',
 			'title'       => __( '全局样式', 'cozy-journal' ),
@@ -307,6 +357,28 @@ function cozy_journal_get_theme_option_sections() {
 					'type'        => 'checkbox',
 					'default'     => false,
 					'group'       => __( '评论身份', 'cozy-journal' ),
+				),
+
+				'cozy_journal_writing_show_user_name' => array(
+					'label'       => __( '写作台显示当前用户名称', 'cozy-journal' ),
+					'description' => __( '默认关闭；开启后显示当前登录用户的 WordPress 公开显示名称。', 'cozy-journal' ),
+					'type'        => 'checkbox',
+					'default'     => false,
+					'group'       => __( '前台写作身份', 'cozy-journal' ),
+				),
+				'cozy_journal_writing_show_user_avatar' => array(
+					'label'       => __( '写作台显示当前用户头像', 'cozy-journal' ),
+					'description' => __( '默认关闭，避免截图带出头像或触发头像服务请求。', 'cozy-journal' ),
+					'type'        => 'checkbox',
+					'default'     => false,
+					'group'       => __( '前台写作身份', 'cozy-journal' ),
+				),
+				'cozy_journal_writing_show_lock_user_name' => array(
+					'label'       => __( '编辑锁显示协作者名称', 'cozy-journal' ),
+					'description' => __( '默认关闭，统一使用“另一位用户”作为冲突提示。', 'cozy-journal' ),
+					'type'        => 'checkbox',
+					'default'     => false,
+					'group'       => __( '前台写作身份', 'cozy-journal' ),
 				),
 			),
 		),
@@ -835,6 +907,9 @@ function cozy_journal_render_welcome_panel() {
 			<p><?php esc_html_e( '感谢使用 Cozy Journal。这里可以集中调整整本手账的颜色、首页、文章布局和装饰，也可以随时备份自己的搭配。', 'cozy-journal' ); ?></p>
 			<div class="cj-welcome-actions">
 				<a class="button button-primary cj-primary-button" href="<?php echo esc_url( admin_url( 'admin.php?page=' . $sections['initial']['page'] ) ); ?>"><?php esc_html_e( '开始设置', 'cozy-journal' ); ?></a>
+				<?php if ( function_exists( 'cozy_journal_get_write_url' ) && cozy_journal_writing_desk_enabled() && current_user_can( 'edit_posts' ) ) : ?>
+					<a class="button cj-secondary-button" href="<?php echo esc_url( cozy_journal_get_write_url() ); ?>" target="_blank" rel="noopener noreferrer"><span class="dashicons dashicons-edit-page"></span><?php esc_html_e( '打开写作台', 'cozy-journal' ); ?></a>
+				<?php endif; ?>
 				<a class="button cj-secondary-button" href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( '查看网站', 'cozy-journal' ); ?><span class="dashicons dashicons-external"></span></a>
 			</div>
 		</div>
@@ -1056,4 +1131,3 @@ function cozy_journal_render_options_page() {
 	</div>
 	<?php
 }
-
