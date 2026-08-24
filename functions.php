@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'COZY_JOURNAL_VERSION' ) ) {
-	define( 'COZY_JOURNAL_VERSION', '1.0.0' );
+	define( 'COZY_JOURNAL_VERSION', '1.1.0' );
 }
 
 if ( ! defined( 'COZY_JOURNAL_NAME' ) ) {
@@ -253,57 +253,7 @@ function cozy_journal_get_stickers() {
 	return isset( $sets[ $selected ] ) ? $sets[ $selected ] : $sets['floral'];
 }
 
-/**
- * Adds a friendly settings entry below Appearance.
- */
-function cozy_journal_add_theme_page() {
-	add_theme_page(
-		__( '手账主题设置', 'cozy-journal' ),
-		__( '手账主题设置', 'cozy-journal' ),
-		'edit_theme_options',
-		'cozy-journal-settings',
-		'cozy_journal_render_theme_page'
-	);
-}
-add_action( 'admin_menu', 'cozy_journal_add_theme_page' );
-
-/**
- * Renders the theme settings helper page.
- */
-function cozy_journal_render_theme_page() {
-	if ( ! current_user_can( 'edit_theme_options' ) ) {
-		return;
-	}
-
-	$customize_url = add_query_arg(
-		array(
-			'autofocus[panel]' => 'cozy_journal_theme_options',
-		),
-		admin_url( 'customize.php' )
-	);
-	?>
-	<div class="wrap cozy-journal-admin-wrap">
-		<h1><?php esc_html_e( 'Cozy Journal · 手账主题设置', 'cozy-journal' ); ?></h1>
-		<p class="description"><?php esc_html_e( '在可视化自定义器中调整主题，修改后可以一边预览一边发布。', 'cozy-journal' ); ?></p>
-		<div class="card" style="max-width:760px;padding:24px;margin-top:24px;border-left:5px solid #d8757f;">
-			<h2><?php esc_html_e( '可以调整什么？', 'cozy-journal' ); ?></h2>
-			<ul style="list-style:disc;padding-left:22px;line-height:1.9;">
-				<li><?php esc_html_e( '首页欢迎语、标题、说明文字与按钮', 'cozy-journal' ); ?></li>
-				<li><?php esc_html_e( '主题主色、点缀色、纸张色、卡片色与文字色', 'cozy-journal' ); ?></li>
-				<li><?php esc_html_e( '标题/正文字体、卡片圆角、网格或列表布局', 'cozy-journal' ); ?></li>
-				<li><?php esc_html_e( '侧栏、特色图片、纸胶带、贴纸及贴纸主题', 'cozy-journal' ); ?></li>
-				<li><?php esc_html_e( '页脚寄语与版权年份显示', 'cozy-journal' ); ?></li>
-			</ul>
-			<p>
-				<a class="button button-primary button-hero" href="<?php echo esc_url( $customize_url ); ?>">
-					<?php esc_html_e( '打开可视化主题设置', 'cozy-journal' ); ?>
-				</a>
-			</p>
-		</div>
-	</div>
-	<?php
-}
-
 require get_template_directory() . '/inc/template-tags.php';
 require get_template_directory() . '/inc/privacy.php';
+require get_template_directory() . '/inc/theme-options.php';
 require get_template_directory() . '/inc/customizer.php';

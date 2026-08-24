@@ -17,7 +17,9 @@ $stickers  = cozy_journal_get_stickers();
 			<div class="hero-paper">
 				<div class="hero-tape" aria-hidden="true"></div>
 				<div class="hero-copy">
-					<p class="hero-date"><span aria-hidden="true">◷</span> <?php echo esc_html( wp_date( 'n月j日 · l' ) ); ?></p>
+					<?php if ( get_theme_mod( 'cozy_journal_show_hero_date', true ) ) : ?>
+						<p class="hero-date"><span aria-hidden="true">◷</span> <?php echo esc_html( wp_date( 'n月j日 · l' ) ); ?></p>
+					<?php endif; ?>
 					<p class="hero-eyebrow"><?php echo esc_html( get_theme_mod( 'cozy_journal_hero_eyebrow', __( '今天也要记录小确幸', 'cozy-journal' ) ) ); ?></p>
 					<h1 id="journal-hero-title" class="hero-title"><?php echo esc_html( get_theme_mod( 'cozy_journal_hero_title', __( '把日子过成喜欢的样子', 'cozy-journal' ) ) ); ?></h1>
 					<p class="hero-description"><?php echo esc_html( get_theme_mod( 'cozy_journal_hero_description', __( '收藏平凡日子里的光，写下每一份柔软、认真和欢喜。', 'cozy-journal' ) ) ); ?></p>
@@ -87,11 +89,13 @@ $stickers  = cozy_journal_get_stickers();
 		<div class="post-card-grid">
 			<?php
 			if ( 'page' === get_option( 'show_on_front' ) ) {
+				$cozy_journal_home_posts_count = absint( get_theme_mod( 'cozy_journal_home_posts_count', 6 ) );
+				$cozy_journal_home_posts_count = min( 12, max( 3, $cozy_journal_home_posts_count ) );
 				$cozy_journal_posts = new WP_Query(
 					array(
 						'post_type'           => 'post',
 						'post_status'         => 'publish',
-						'posts_per_page'      => 6,
+						'posts_per_page'      => $cozy_journal_home_posts_count,
 						'ignore_sticky_posts' => false,
 					)
 				);
@@ -121,4 +125,3 @@ $stickers  = cozy_journal_get_stickers();
 
 <?php
 get_footer();
-

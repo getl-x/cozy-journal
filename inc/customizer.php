@@ -119,6 +119,22 @@ function cozy_journal_customize_register( $wp_customize ) {
 		)
 	);
 
+	$wp_customize->add_setting(
+		'cozy_journal_show_hero_date',
+		array(
+			'default'           => true,
+			'sanitize_callback' => 'cozy_journal_sanitize_checkbox',
+		)
+	);
+	$wp_customize->add_control(
+		'cozy_journal_show_hero_date',
+		array(
+			'label'   => __( '显示欢迎卡日期', 'cozy-journal' ),
+			'section' => 'cozy_journal_hero_section',
+			'type'    => 'checkbox',
+		)
+	);
+
 	$hero_text_settings = array(
 		'cozy_journal_hero_eyebrow' => array(
 			'label'   => __( '小标签文字', 'cozy-journal' ),
@@ -323,6 +339,28 @@ function cozy_journal_customize_register( $wp_customize ) {
 			'choices' => array(
 				'grid' => __( '双列拼贴', 'cozy-journal' ),
 				'list' => __( '单列日记', 'cozy-journal' ),
+			),
+		)
+	);
+
+	$wp_customize->add_setting(
+		'cozy_journal_home_posts_count',
+		array(
+			'default'           => 6,
+			'sanitize_callback' => 'cozy_journal_sanitize_range',
+		)
+	);
+	$wp_customize->add_control(
+		'cozy_journal_home_posts_count',
+		array(
+			'label'       => __( '静态首页最新文章数量', 'cozy-journal' ),
+			'description' => __( '设置为静态首页时，在页面正文后显示的文章数量。', 'cozy-journal' ),
+			'section'     => 'cozy_journal_layout_section',
+			'type'        => 'number',
+			'input_attrs' => array(
+				'min'  => 3,
+				'max'  => 12,
+				'step' => 1,
 			),
 		)
 	);
