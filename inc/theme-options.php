@@ -618,6 +618,7 @@ function cozy_journal_save_options() {
 		? wp_unslash( $_POST['cozy_journal'] )
 		: array();
 
+	$sanitized_settings = array();
 	foreach ( $sections[ $section_key ]['fields'] as $setting_id => $field ) {
 		if ( 'checkbox' === $field['type'] ) {
 			$value = isset( $submitted[ $setting_id ] );
@@ -627,7 +628,20 @@ function cozy_journal_save_options() {
 			continue;
 		}
 
-		set_theme_mod( $setting_id, cozy_journal_sanitize_theme_option( $value, $field ) );
+		if ( 'cozy_journal_writing_slug' === $setting_id && function_exists( 'cozy_journal_validate_writing_slug' ) ) {
+			$validated_slug = cozy_journal_validate_writing_slug( $value );
+			if ( is_wp_error( $validated_slug ) ) {
+				cozy_journal_options_redirect( $sections[ $section_key ]['page'], '', $validated_slug->get_error_code() );
+			}
+
+			$value = $validated_slug;
+		}
+
+		$sanitized_settings[ $setting_id ] = cozy_journal_sanitize_theme_option( $value, $field );
+	}
+
+	foreach ( $sanitized_settings as $setting_id => $value ) {
+		set_theme_mod( $setting_id, $value );
 	}
 
 	cozy_journal_options_redirect( $sections[ $section_key ]['page'], 'saved' );
@@ -644,13 +658,23 @@ function cozy_journal_reset_options() {
 
 	check_admin_referer( 'cozy_journal_reset_options' );
 
-	$mode        = isset( $_POST['reset_mode'] ) ? sanitize_key( wp_unslash( $_POST['reset_mode'] ) ) : 'section';
-	$section_key = isset( $_POST['section'] ) ? sanitize_key( wp_unslash( $_POST['section'] ) ) : '';
-	$return_page = isset( $_POST['return_page'] ) ? sanitize_key( wp_unslash( $_POST['return_page'] ) ) : 'cozy-journal-settings';
-	$sections    = cozy_journal_get_theme_option_sections();
+	$mode         = isset( $_POST['reset_mode'] ) ? sanitize_key( wp_unslash( $_POST['reset_mode'] ) ) : 'section';
+	$section_key  = isset( $_POST['section'] ) ? sanitize_key( wp_unslash( $_POST['section'] ) ) : '';
+	$return_page  = isset( $_POST['return_page'] ) ? sanitize_key( wp_unslash( $_POST['return_page'] ) ) : 'cozy-journal-settings';
+	$sections     = cozy_journal_get_theme_option_sections();
+	$reset_fields = 'all' === $mode
+		? cozy_journal_get_all_option_fields()
+		: ( isset( $sections[ $section_key ] ) ? $sections[ $section_key ]['fields'] : array() );
+
+	if ( isset( $reset_fields['cozy_journal_writing_slug'] ) && function_exists( 'cozy_journal_validate_writing_slug' ) ) {
+		$validated_slug = cozy_journal_validate_writing_slug( $reset_fields['cozy_journal_writing_slug']['default'] );
+		if ( is_wp_error( $validated_slug ) ) {
+			cozy_journal_options_redirect( 'all' === $mode ? 'cozy-journal-settings-backup' : $return_page, '', $validated_slug->get_error_code() );
+		}
+	}
 
 	if ( 'all' === $mode ) {
-		foreach ( cozy_journal_get_all_option_fields() as $setting_id => $field ) {
+		foreach ( $reset_fields as $setting_id => $field ) {
 			remove_theme_mod( $setting_id );
 		}
 		cozy_journal_options_redirect( 'cozy-journal-settings-backup', 'reset_all' );
@@ -777,11 +801,27 @@ function cozy_journal_import_options() {
 		cozy_journal_options_redirect( 'cozy-journal-settings-backup', '', 'invalid_backup' );
 	}
 
-	$allowed_fields = cozy_journal_get_all_option_fields();
+	$allowed_fields     = cozy_journal_get_all_option_fields();
+	$sanitized_settings = array();
 	foreach ( $allowed_fields as $setting_id => $field ) {
 		if ( array_key_exists( $setting_id, $payload['settings'] ) ) {
-			set_theme_mod( $setting_id, cozy_journal_sanitize_theme_option( $payload['settings'][ $setting_id ], $field ) );
+			$value = $payload['settings'][ $setting_id ];
+
+			if ( 'cozy_journal_writing_slug' === $setting_id && function_exists( 'cozy_journal_validate_writing_slug' ) ) {
+				$validated_slug = cozy_journal_validate_writing_slug( $value );
+				if ( is_wp_error( $validated_slug ) ) {
+					cozy_journal_options_redirect( 'cozy-journal-settings-backup', '', $validated_slug->get_error_code() );
+				}
+
+				$value = $validated_slug;
+			}
+
+			$sanitized_settings[ $setting_id ] = cozy_journal_sanitize_theme_option( $value, $field );
 		}
+	}
+
+	foreach ( $sanitized_settings as $setting_id => $value ) {
+		set_theme_mod( $setting_id, $value );
 	}
 
 	cozy_journal_options_redirect( 'cozy-journal-settings-backup', 'imported' );
@@ -801,9 +841,11 @@ function cozy_journal_render_options_notice() {
 		'imported'      => __( '备份导入成功，设置已经恢复。', 'cozy-journal' ),
 	);
 	$errors = array(
-		'missing_file'   => __( '没有收到可用的备份文件，请重新选择。', 'cozy-journal' ),
-		'file_too_large' => __( '备份文件超过 1MB，已拒绝导入。', 'cozy-journal' ),
-		'invalid_backup' => __( '这个文件不是有效的 Cozy Journal 设置备份或样式模板。', 'cozy-journal' ),
+		'missing_file'          => __( '没有收到可用的备份文件，请重新选择。', 'cozy-journal' ),
+		'file_too_large'        => __( '备份文件超过 1MB，已拒绝导入。', 'cozy-journal' ),
+		'invalid_backup'        => __( '这个文件不是有效的 Cozy Journal 设置备份或样式模板。', 'cozy-journal' ),
+		'invalid_writing_slug'  => __( '写作页面路径格式无效，请使用英文小写字母、数字、短横线或下划线。', 'cozy-journal' ),
+		'writing_slug_conflict' => __( '写作页面路径与现有页面、归档或 WordPress 系统路径冲突，请换一个名称。', 'cozy-journal' ),
 	);
 
 	if ( isset( $messages[ $notice ] ) ) {

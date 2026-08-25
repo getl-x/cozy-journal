@@ -54,6 +54,27 @@ function cozy_journal_sanitize_range( $input, $setting ) {
 }
 
 /**
+ * Validates the writing path without silently replacing conflicts.
+ *
+ * @param WP_Error             $validity Current validation result.
+ * @param mixed                $value    Proposed path value.
+ * @param WP_Customize_Setting $setting  Customizer setting instance.
+ * @return WP_Error
+ */
+function cozy_journal_validate_writing_slug_customizer( $validity, $value, $setting ) {
+	if ( ! function_exists( 'cozy_journal_validate_writing_slug' ) ) {
+		return $validity;
+	}
+
+	$validated = cozy_journal_validate_writing_slug( $value );
+	if ( is_wp_error( $validated ) ) {
+		$validity->add( $validated->get_error_code(), $validated->get_error_message() );
+	}
+
+	return $validity;
+}
+
+/**
  * Registers all Cozy Journal options.
  *
  * @param WP_Customize_Manager $wp_customize Customizer manager.
@@ -244,6 +265,7 @@ function cozy_journal_customize_register( $wp_customize ) {
 		array(
 			'default'           => 'write',
 			'sanitize_callback' => 'cozy_journal_sanitize_writing_slug',
+			'validate_callback' => 'cozy_journal_validate_writing_slug_customizer',
 		)
 	);
 	$wp_customize->add_control(

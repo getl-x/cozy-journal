@@ -22,18 +22,29 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 			</section>
 		<?php else : ?>
 			<?php
-			$requested_post = cozy_journal_get_requested_writing_post();
-			$request_error  = is_wp_error( $requested_post ) ? $requested_post->get_error_message() : '';
-			$writing_post   = $requested_post instanceof WP_Post ? $requested_post : null;
-			$post_id        = $writing_post ? $writing_post->ID : 0;
-			$post_title     = $writing_post ? $writing_post->post_title : '';
-			$post_content   = $writing_post ? $writing_post->post_content : '';
-			$post_excerpt   = $writing_post ? $writing_post->post_excerpt : '';
-			$post_status    = $writing_post ? $writing_post->post_status : 'draft';
-			$selected_cats  = $writing_post ? wp_get_post_categories( $post_id ) : array( absint( get_option( 'default_category' ) ) );
-			$post_tags      = $writing_post ? wp_get_post_tags( $post_id, array( 'fields' => 'names' ) ) : array();
-			$tag_string     = implode( '，', $post_tags );
-			$comments_open  = $writing_post ? 'open' === $writing_post->comment_status : true;
+			$requested_post_id = isset( $_GET['post_id'] ) ? absint( $_GET['post_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$requested_post     = cozy_journal_get_requested_writing_post();
+			$request_error      = is_wp_error( $requested_post ) ? $requested_post->get_error_message() : '';
+			$request_error_code = is_wp_error( $requested_post ) ? $requested_post->get_error_code() : '';
+			$writing_post       = $requested_post instanceof WP_Post ? $requested_post : null;
+			$form_state         = cozy_journal_take_writing_form_state( $requested_post_id );
+			$show_writing_form  = ! $request_error || $form_state;
+			if ( ! $writing_post && $form_state && 'post_locked' === $request_error_code ) {
+				$locked_post = get_post( absint( $form_state['post_id'] ) );
+				if ( $locked_post && 'post' === $locked_post->post_type && current_user_can( 'edit_post', $locked_post->ID ) ) {
+					$writing_post = $locked_post;
+				}
+			}
+			$post_id            = $writing_post ? $writing_post->ID : ( $form_state ? absint( $form_state['post_id'] ) : 0 );
+			$post_title         = $writing_post ? $writing_post->post_title : '';
+			$post_content       = $writing_post ? $writing_post->post_content : '';
+			$post_excerpt       = $writing_post ? $writing_post->post_excerpt : '';
+			$post_status        = $writing_post ? $writing_post->post_status : 'draft';
+			$selected_cats      = $writing_post ? wp_get_post_categories( $post_id ) : array( absint( get_option( 'default_category' ) ) );
+			$post_tags          = $writing_post ? wp_get_post_tags( $post_id, array( 'fields' => 'names' ) ) : array();
+			$tag_string         = implode( '，', $post_tags );
+			$comments_open      = $writing_post ? 'open' === $writing_post->comment_status : true;
+			$remove_thumbnail = false;
 			$thumbnail_url  = $writing_post && has_post_thumbnail( $post_id ) ? get_the_post_thumbnail_url( $post_id, 'medium_large' ) : '';
 			$manual_status  = $writing_post && in_array( $post_status, array( 'publish', 'private', 'future' ), true );
 			$saved_view_url = $manual_status && 'publish' !== $post_status ? get_preview_post_link( $writing_post ) : ( $writing_post ? get_permalink( $writing_post ) : '' );
@@ -64,7 +75,18 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 				'missing_content' => __( '正文还是空白的，请写下一点内容。', 'cozy-journal' ),
 				'save_failed'     => __( '文章没有保存成功，请稍后再试。', 'cozy-journal' ),
 				'media_failed'    => __( '文章已经保存，但特色图片上传失败，请检查文件格式或大小。', 'cozy-journal' ),
+				'post_locked'     => __( '这篇文章正在被另一位用户编辑，本次内容尚未覆盖对方版本。', 'cozy-journal' ),
 			);
+
+			if ( $form_state ) {
+				$post_title        = $form_state['title'];
+				$post_content      = $form_state['content'];
+				$post_excerpt      = $form_state['excerpt'];
+				$selected_cats     = $form_state['categories'] ? $form_state['categories'] : array( absint( get_option( 'default_category' ) ) );
+				$tag_string        = $form_state['tags'];
+				$comments_open     = ! empty( $form_state['comments_open'] );
+				$remove_thumbnail  = ! empty( $form_state['remove_thumbnail'] );
+			}
 			$recent_posts = get_posts(
 				array(
 					'author'         => get_current_user_id(),
@@ -97,6 +119,20 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 			<?php if ( $request_error ) : ?>
 				<div class="writing-notice writing-notice-error"><span aria-hidden="true">!</span><p><?php echo esc_html( $request_error ); ?></p></div>
 			<?php endif; ?>
+			<?php if ( $form_state ) : ?>
+				<div class="writing-notice writing-notice-success">
+					<span aria-hidden="true">↺</span>
+					<p>
+						<?php
+						echo esc_html(
+							! empty( $form_state['had_featured_upload'] )
+								? __( '刚才填写的文字和选项已经恢复；出于浏览器安全限制，请重新选择特色图片文件。', 'cozy-journal' )
+								: __( '刚才填写的内容已经恢复，可以修改后重新保存。', 'cozy-journal' )
+						);
+						?>
+					</p>
+				</div>
+			<?php endif; ?>
 			<?php if ( isset( $notices[ $notice_code ] ) ) : ?>
 				<div class="writing-notice writing-notice-success">
 					<span aria-hidden="true">✓</span><p><?php echo esc_html( $notices[ $notice_code ] ); ?></p>
@@ -105,11 +141,12 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 					<?php endif; ?>
 				</div>
 			<?php endif; ?>
-			<?php if ( isset( $errors[ $error_code ] ) ) : ?>
+			<?php if ( isset( $errors[ $error_code ] ) && $error_code !== $request_error_code ) : ?>
 				<div class="writing-notice writing-notice-error"><span aria-hidden="true">!</span><p><?php echo esc_html( $errors[ $error_code ] ); ?></p></div>
 			<?php endif; ?>
 
-			<form id="cozy-journal-writing-form" class="writing-desk-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data">
+			<?php if ( $show_writing_form ) : ?>
+			<form id="cozy-journal-writing-form" class="writing-desk-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data" data-restored-state="<?php echo esc_attr( $form_state ? '1' : '0' ); ?>">
 				<input type="hidden" name="action" value="cozy_journal_save_frontend_post">
 				<input id="cozy-journal-post-id" type="hidden" name="cozy_journal_post_id" value="<?php echo esc_attr( $post_id ); ?>">
 				<?php wp_nonce_field( 'cozy_journal_save_frontend_post' ); ?>
@@ -213,7 +250,7 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 							<div class="writing-card-heading"><span aria-hidden="true">▧</span><h2><?php esc_html_e( '特色图片', 'cozy-journal' ); ?></h2></div>
 							<?php if ( $thumbnail_url ) : ?>
 								<div class="writing-current-thumbnail"><img src="<?php echo esc_url( $thumbnail_url ); ?>" alt=""><span><?php esc_html_e( '当前特色图片', 'cozy-journal' ); ?></span></div>
-								<label class="writing-remove-thumbnail"><input type="checkbox" name="cozy_journal_remove_thumbnail" value="1"> <?php esc_html_e( '移除当前图片', 'cozy-journal' ); ?></label>
+								<label class="writing-remove-thumbnail"><input type="checkbox" name="cozy_journal_remove_thumbnail" value="1" <?php checked( $remove_thumbnail ); ?>> <?php esc_html_e( '移除当前图片', 'cozy-journal' ); ?></label>
 							<?php endif; ?>
 							<label class="writing-file-picker">
 								<input type="file" name="cozy_journal_featured_image" accept="image/jpeg,image/png,image/gif,image/webp">
@@ -234,6 +271,7 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 					</section>
 				</aside>
 			</form>
+			<?php endif; ?>
 
 			<?php if ( $recent_posts ) : ?>
 				<section class="writing-recent-section">

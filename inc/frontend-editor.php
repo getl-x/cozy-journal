@@ -10,22 +10,153 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Sanitizes the single URL segment used by the writing desk.
+ * Normalizes the single URL segment used by the writing desk.
  *
  * @param mixed $value Raw path value.
  * @return string
  */
-function cozy_journal_sanitize_writing_slug( $value ) {
+function cozy_journal_normalize_writing_slug( $value ) {
 	$slug = strtolower( remove_accents( wp_strip_all_tags( (string) $value ) ) );
 	$slug = trim( $slug );
 	$slug = trim( $slug, '/' );
 	$slug = preg_replace( '/[^a-z0-9_-]+/', '-', $slug );
 	$slug = trim( (string) $slug, '-_' );
 	$slug = substr( $slug, 0, 60 );
+	$slug = trim( $slug, '-_' );
+
+	return $slug;
+}
+
+/**
+ * Sanitizes the single URL segment used by the writing desk.
+ *
+ * @param mixed $value Raw path value.
+ * @return string
+ */
+function cozy_journal_sanitize_writing_slug( $value ) {
+	$slug = cozy_journal_normalize_writing_slug( $value );
 
 	$reserved = array( '404', 'feed', 'wp-admin', 'wp-json', 'wp-login', 'wp-login-php' );
-	if ( ! $slug || in_array( $slug, $reserved, true ) || 0 === strpos( $slug, 'wp-' ) ) {
+	if ( '' === $slug || in_array( $slug, $reserved, true ) || 0 === strpos( $slug, 'wp-' ) ) {
 		return 'write';
+	}
+
+	return $slug;
+}
+
+/**
+ * Returns rewrite bases that must not be reused by the writing desk.
+ *
+ * @return string[]
+ */
+function cozy_journal_get_reserved_writing_slugs() {
+	global $wp_rewrite;
+
+	$reserved = array(
+		'404',
+		'author',
+		'category',
+		'comment-page',
+		'comments',
+		'embed',
+		'feed',
+		'page',
+		's',
+		'search',
+		'tag',
+		'wp-admin',
+		'wp-json',
+		'wp-login',
+		'wp-login-php',
+	);
+
+	if ( $wp_rewrite ) {
+		foreach ( array( 'author_base', 'comments_base', 'comments_pagination_base', 'feed_base', 'pagination_base', 'search_base' ) as $property ) {
+			if ( ! empty( $wp_rewrite->$property ) ) {
+				$reserved[] = $wp_rewrite->$property;
+			}
+		}
+
+		$rewrite_rules = $wp_rewrite->wp_rewrite_rules();
+		if ( is_array( $rewrite_rules ) ) {
+			foreach ( $rewrite_rules as $regex => $query ) {
+				if ( false !== strpos( (string) $query, 'cozy_journal_write=1' ) ) {
+					continue;
+				}
+
+				if ( preg_match( '/^\^?([a-z0-9_-]+)(?:\/|\$|\?)/i', (string) $regex, $matches ) ) {
+					$reserved[] = $matches[1];
+				}
+			}
+		}
+	}
+
+	if ( function_exists( 'rest_get_url_prefix' ) ) {
+		$reserved[] = rest_get_url_prefix();
+	}
+
+	foreach ( array( get_option( 'category_base', 'category' ), get_option( 'tag_base', 'tag' ) ) as $base ) {
+		if ( $base ) {
+			$reserved[] = $base;
+		}
+	}
+
+	foreach ( get_post_types( array( 'public' => true ), 'objects' ) as $post_type ) {
+		if ( is_array( $post_type->rewrite ) && ! empty( $post_type->rewrite['slug'] ) ) {
+			$reserved[] = $post_type->rewrite['slug'];
+		}
+
+		if ( is_string( $post_type->has_archive ) ) {
+			$reserved[] = $post_type->has_archive;
+		}
+	}
+
+	foreach ( get_taxonomies( array( 'public' => true ), 'objects' ) as $taxonomy ) {
+		if ( is_array( $taxonomy->rewrite ) && ! empty( $taxonomy->rewrite['slug'] ) ) {
+			$reserved[] = $taxonomy->rewrite['slug'];
+		}
+	}
+
+	$reserved = array_map(
+		function( $slug ) {
+			$slug = trim( (string) $slug, '/' );
+			$slug = strtok( $slug, '/' );
+			return cozy_journal_normalize_writing_slug( $slug );
+		},
+		$reserved
+	);
+
+	return array_values( array_unique( array_filter( $reserved ) ) );
+}
+
+/**
+ * Validates a proposed writing path against WordPress routes and content.
+ *
+ * @param mixed $value Raw path value.
+ * @return string|WP_Error
+ */
+function cozy_journal_validate_writing_slug( $value ) {
+	$slug = cozy_journal_normalize_writing_slug( $value );
+
+	if ( '' === $slug || 0 === strpos( $slug, 'wp-' ) ) {
+		return new WP_Error( 'invalid_writing_slug', __( '写作页面路径必须包含英文小写字母、数字、短横线或下划线。', 'cozy-journal' ) );
+	}
+
+	if ( preg_match( '/^\d+$/D', $slug ) ) {
+		return new WP_Error( 'writing_slug_conflict', __( '写作页面路径不能只使用数字，以免覆盖日期归档或分页地址。', 'cozy-journal' ) );
+	}
+
+	if ( in_array( $slug, cozy_journal_get_reserved_writing_slugs(), true ) ) {
+		return new WP_Error( 'writing_slug_conflict', __( '这个路径已被 WordPress、文章类型或分类归档使用，请换一个名称。', 'cozy-journal' ) );
+	}
+
+	if ( get_page_by_path( $slug, OBJECT, 'page' ) ) {
+		return new WP_Error( 'writing_slug_conflict', __( '这个路径已经有同名页面，请先换一个写作路径。', 'cozy-journal' ) );
+	}
+
+	$permalink_structure = trim( (string) get_option( 'permalink_structure' ), '/' );
+	if ( 0 === strpos( $permalink_structure, '%postname%' ) && get_page_by_path( $slug, OBJECT, 'post' ) ) {
+		return new WP_Error( 'writing_slug_conflict', __( '这个路径已经有同名文章，请先换一个写作路径。', 'cozy-journal' ) );
 	}
 
 	return $slug;
@@ -74,15 +205,30 @@ add_action( 'init', 'cozy_journal_register_writing_rewrite' );
  */
 function cozy_journal_resolve_writing_request( $wp ) {
 	if ( ! get_option( 'permalink_structure' ) ) {
+		if ( isset( $wp->query_vars['cozy_journal_write'] ) ) {
+			$other_query_vars = $wp->query_vars;
+			unset( $other_query_vars['cozy_journal_write'] );
+
+			if ( $other_query_vars ) {
+				unset( $wp->query_vars['cozy_journal_write'] );
+			}
+		}
+
 		return;
 	}
 
 	$request = trim( (string) $wp->request, '/' );
 	if ( cozy_journal_get_writing_slug() === $request ) {
 		$wp->query_vars['cozy_journal_write'] = '1';
-	} elseif ( isset( $wp->query_vars['cozy_journal_write'] ) ) {
+		unset( $wp->query_vars['error'] );
+	} elseif (
+		isset( $wp->query_vars['cozy_journal_write'] ) &&
+		false !== strpos( (string) $wp->matched_query, 'cozy_journal_write=1' )
+	) {
 		unset( $wp->query_vars['cozy_journal_write'] );
 		$wp->query_vars['error'] = '404';
+	} elseif ( isset( $wp->query_vars['cozy_journal_write'] ) ) {
+		unset( $wp->query_vars['cozy_journal_write'] );
 	}
 }
 add_action( 'parse_request', 'cozy_journal_resolve_writing_request', 1 );
@@ -124,6 +270,33 @@ function cozy_journal_maybe_flush_writing_rewrite() {
 add_action( 'admin_init', 'cozy_journal_maybe_flush_writing_rewrite' );
 
 /**
+ * Deletes the cached writing rewrite signature and WordPress rules.
+ */
+function cozy_journal_invalidate_writing_rewrite() {
+	delete_option( 'cozy_journal_rewrite_signature' );
+	delete_option( 'rewrite_rules' );
+}
+
+/**
+ * Sanitizes direct theme-mod updates and invalidates rules before first save.
+ *
+ * @param mixed $value     New theme modification value.
+ * @param mixed $old_value Previous theme modification value.
+ * @return string
+ */
+function cozy_journal_prepare_writing_slug_update( $value, $old_value ) {
+	$new_slug = cozy_journal_sanitize_writing_slug( $value );
+	$old_slug = cozy_journal_sanitize_writing_slug( $old_value ? $old_value : 'write' );
+
+	if ( $old_slug !== $new_slug ) {
+		cozy_journal_invalidate_writing_rewrite();
+	}
+
+	return $new_slug;
+}
+add_filter( 'pre_set_theme_mod_cozy_journal_writing_slug', 'cozy_journal_prepare_writing_slug_update', 10, 2 );
+
+/**
  * Marks rewrite rules stale when the writing path theme modification changes.
  *
  * @param mixed $old_value Previous theme modifications.
@@ -136,8 +309,7 @@ function cozy_journal_mark_writing_rewrite_stale( $old_value, $value ) {
 	$new_slug = cozy_journal_sanitize_writing_slug( isset( $new_mods['cozy_journal_writing_slug'] ) ? $new_mods['cozy_journal_writing_slug'] : 'write' );
 
 	if ( $old_slug !== $new_slug ) {
-		delete_option( 'cozy_journal_rewrite_signature' );
-		delete_option( 'rewrite_rules' );
+		cozy_journal_invalidate_writing_rewrite();
 	}
 }
 add_action( 'update_option_theme_mods_' . get_option( 'stylesheet' ), 'cozy_journal_mark_writing_rewrite_stale', 10, 2 );
@@ -253,6 +425,125 @@ function cozy_journal_writing_body_classes( $classes ) {
 add_filter( 'body_class', 'cozy_journal_writing_body_classes' );
 
 /**
+ * Returns a transient key for one restored writing form.
+ *
+ * @param int    $user_id Current user ID.
+ * @param string $token   One-time restoration token.
+ * @return string
+ */
+function cozy_journal_get_writing_form_state_key( $user_id, $token ) {
+	return 'cj_write_form_' . absint( $user_id ) . '_' . sanitize_key( $token );
+}
+
+/**
+ * Stores sanitized form values before redirecting after a save failure.
+ *
+ * @param array $input   Submitted form values.
+ * @param int   $post_id Existing post ID, if any.
+ * @return string One-time restoration token.
+ */
+function cozy_journal_store_writing_form_state( $input, $post_id = 0 ) {
+	$user_id = get_current_user_id();
+	if ( ! $user_id ) {
+		return '';
+	}
+
+	$token = strtolower( wp_generate_password( 20, false, false ) );
+	$state = array(
+		'user_id'             => $user_id,
+		'post_id'             => absint( $post_id ),
+		'title'               => isset( $input['cozy_journal_title'] ) ? sanitize_text_field( $input['cozy_journal_title'] ) : '',
+		'content'             => isset( $input['cozy_journal_content'] ) ? wp_kses_post( $input['cozy_journal_content'] ) : '',
+		'excerpt'             => isset( $input['cozy_journal_excerpt'] ) ? sanitize_textarea_field( $input['cozy_journal_excerpt'] ) : '',
+		'categories'          => isset( $input['cozy_journal_categories'] ) ? cozy_journal_sanitize_writing_categories( $input['cozy_journal_categories'] ) : array(),
+		'tags'                => isset( $input['cozy_journal_tags'] ) ? sanitize_text_field( $input['cozy_journal_tags'] ) : '',
+		'comments_open'       => ! empty( $input['cozy_journal_comments_open'] ),
+		'remove_thumbnail'    => ! empty( $input['cozy_journal_remove_thumbnail'] ),
+		'had_featured_upload' => ! empty( $_FILES['cozy_journal_featured_image']['name'] ),
+	);
+
+	set_transient( cozy_journal_get_writing_form_state_key( $user_id, $token ), $state, 10 * MINUTE_IN_SECONDS );
+
+	return $token;
+}
+
+/**
+ * Returns and consumes one restored writing form state.
+ *
+ * @param int $post_id Requested post ID.
+ * @return array
+ */
+function cozy_journal_take_writing_form_state( $post_id = 0 ) {
+	$token = isset( $_GET['write_state'] ) ? sanitize_key( wp_unslash( $_GET['write_state'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	if ( ! $token ) {
+		return array();
+	}
+
+	$user_id = get_current_user_id();
+	$key     = cozy_journal_get_writing_form_state_key( $user_id, $token );
+	$state   = get_transient( $key );
+
+	delete_transient( $key );
+
+	if (
+		! is_array( $state ) ||
+		$user_id !== absint( isset( $state['user_id'] ) ? $state['user_id'] : 0 ) ||
+		absint( $post_id ) !== absint( isset( $state['post_id'] ) ? $state['post_id'] : 0 )
+	) {
+		return array();
+	}
+
+	return $state;
+}
+
+/**
+ * Loads WordPress post-lock helpers on front-end requests.
+ */
+function cozy_journal_load_post_lock_functions() {
+	if ( ! function_exists( 'wp_check_post_lock' ) || ! function_exists( 'wp_set_post_lock' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/post.php';
+	}
+}
+
+/**
+ * Claims an existing post for the current writing session.
+ *
+ * @param int $post_id Post ID.
+ * @return true|WP_Error
+ */
+function cozy_journal_claim_writing_post_lock( $post_id ) {
+	$post_id = absint( $post_id );
+	if ( ! $post_id ) {
+		return true;
+	}
+
+	cozy_journal_load_post_lock_functions();
+	$locked_user_id = wp_check_post_lock( $post_id );
+
+	if ( $locked_user_id ) {
+		$locked_user = get_userdata( $locked_user_id );
+		$name        = __( '另一位用户', 'cozy-journal' );
+
+		if ( get_theme_mod( 'cozy_journal_writing_show_lock_user_name', false ) && $locked_user ) {
+			$name = $locked_user->display_name;
+		}
+
+		return new WP_Error(
+			'post_locked',
+			sprintf(
+				/* translators: %s: Display name of the user editing the post. */
+				__( '这篇文章正在由 %s 编辑。请稍后重试，避免覆盖对方的内容。', 'cozy-journal' ),
+				$name
+			)
+		);
+	}
+
+	wp_set_post_lock( $post_id );
+
+	return true;
+}
+
+/**
  * Returns the requested post when the current user may edit it.
  *
  * @return WP_Post|WP_Error|null
@@ -270,6 +561,11 @@ function cozy_journal_get_requested_writing_post() {
 
 	if ( ! current_user_can( 'edit_post', $post_id ) ) {
 		return new WP_Error( 'forbidden_post', __( '你没有权限编辑这篇文章。', 'cozy-journal' ) );
+	}
+
+	$lock = cozy_journal_claim_writing_post_lock( $post_id );
+	if ( is_wp_error( $lock ) ) {
+		return $lock;
 	}
 
 	return $post;
@@ -298,6 +594,7 @@ function cozy_journal_writing_assets() {
 		$requested_post = cozy_journal_get_requested_writing_post();
 		$post_id        = $requested_post instanceof WP_Post ? $requested_post->ID : 0;
 		$post_status    = $requested_post instanceof WP_Post ? $requested_post->post_status : 'draft';
+		$post_locked    = is_wp_error( $requested_post ) && 'post_locked' === $requested_post->get_error_code();
 		$interval       = absint( get_theme_mod( 'cozy_journal_writing_autosave_interval', 30 ) );
 		$interval       = in_array( $interval, array( 0, 30, 60, 120 ), true ) ? $interval : 30;
 
@@ -320,18 +617,25 @@ function cozy_journal_writing_assets() {
 				'nonce'            => wp_create_nonce( 'cozy_journal_frontend_autosave' ),
 				'postId'           => $post_id,
 				'postStatus'       => $post_status,
+				'postLocked'       => $post_locked,
 				'autosaveInterval' => $interval,
+				'lockInterval'     => 60,
 				'writeUrl'         => cozy_journal_get_write_url(),
 				'labels'           => array(
-					'saving'       => __( '正在悄悄保存……', 'cozy-journal' ),
-					'saved'        => __( '已保存到草稿箱', 'cozy-journal' ),
-					'failed'       => __( '自动保存失败，请手动保存', 'cozy-journal' ),
-					'unsaved'      => __( '有尚未保存的修改', 'cozy-journal' ),
-					'published'    => __( '已发布文章请使用手动保存', 'cozy-journal' ),
-					'autosaveBusy' => __( '正在自动保存，请稍等一小会儿再操作', 'cozy-journal' ),
+					'saving'        => __( '正在悄悄保存……', 'cozy-journal' ),
+					'saved'         => __( '已保存到草稿箱', 'cozy-journal' ),
+					'failed'        => __( '自动保存失败，请手动保存', 'cozy-journal' ),
+					'unsaved'       => __( '有尚未保存的修改', 'cozy-journal' ),
+					'mediaUnsaved'  => __( '文字已保存，特色图片仍需手动保存', 'cozy-journal' ),
+					'changedAgain'  => __( '保存期间又有新修改，正在等待下一次保存', 'cozy-journal' ),
+					'published'     => __( '已发布文章请使用手动保存', 'cozy-journal' ),
+					'autosaveBusy'  => __( '正在自动保存，请稍等一小会儿再操作', 'cozy-journal' ),
 					'previewOpened' => __( '预览已在新标签页打开', 'cozy-journal' ),
-					'leaveWarning' => __( '还有内容没有保存，确定离开吗？', 'cozy-journal' ),
-					'words'        => __( '字', 'cozy-journal' ),
+					'leaveWarning'  => __( '还有内容没有保存，确定离开吗？', 'cozy-journal' ),
+					'missingTitle'  => __( '请先给这一页手账写一个标题。', 'cozy-journal' ),
+					'missingContent' => __( '正文还是空白的，请写下一点内容。', 'cozy-journal' ),
+					'lockFailed'    => __( '文章编辑锁刷新失败；手动保存前请确认没有其他人正在编辑。', 'cozy-journal' ),
+					'words'         => __( '字', 'cozy-journal' ),
 				),
 			)
 		);
@@ -392,15 +696,15 @@ function cozy_journal_prepare_writing_post_data( $input, $post_id, $post_status,
 	$title   = isset( $input['cozy_journal_title'] ) ? sanitize_text_field( $input['cozy_journal_title'] ) : '';
 	$content = isset( $input['cozy_journal_content'] ) ? wp_kses_post( $input['cozy_journal_content'] ) : '';
 
-	if ( ! $title && $allow_placeholder ) {
+	if ( '' === $title && $allow_placeholder ) {
 		$title = __( '未命名手账', 'cozy-journal' );
 	}
 
-	if ( ! $title ) {
+	if ( '' === $title ) {
 		return new WP_Error( 'missing_title', __( '请先给这一页手账写一个标题。', 'cozy-journal' ) );
 	}
 
-	if ( ! trim( wp_strip_all_tags( $content ) ) && ! $allow_placeholder ) {
+	if ( '' === trim( wp_strip_all_tags( $content ) ) && ! $allow_placeholder ) {
 		return new WP_Error( 'missing_content', __( '正文还是空白的，请写下一点内容。', 'cozy-journal' ) );
 	}
 
@@ -437,11 +741,12 @@ function cozy_journal_prepare_writing_post_data( $input, $post_id, $post_status,
 /**
  * Redirects back to the writing desk with a status code.
  *
- * @param int    $post_id Post ID.
- * @param string $notice  Notice code.
- * @param string $error   Error code.
+ * @param int    $post_id    Post ID.
+ * @param string $notice     Notice code.
+ * @param string $error      Error code.
+ * @param string $state_token One-time restored form token.
  */
-function cozy_journal_writing_redirect( $post_id = 0, $notice = '', $error = '' ) {
+function cozy_journal_writing_redirect( $post_id = 0, $notice = '', $error = '', $state_token = '' ) {
 	$args = array();
 	if ( $post_id ) {
 		$args['post_id'] = absint( $post_id );
@@ -451,6 +756,9 @@ function cozy_journal_writing_redirect( $post_id = 0, $notice = '', $error = '' 
 	}
 	if ( $error ) {
 		$args['write_error'] = sanitize_key( $error );
+	}
+	if ( $state_token ) {
+		$args['write_state'] = sanitize_key( $state_token );
 	}
 
 	wp_safe_redirect( cozy_journal_get_write_url( $args ) );
@@ -467,10 +775,16 @@ function cozy_journal_save_frontend_post() {
 
 	check_admin_referer( 'cozy_journal_save_frontend_post' );
 
-	$input       = wp_unslash( $_POST );
-	$post_id     = isset( $input['cozy_journal_post_id'] ) ? absint( $input['cozy_journal_post_id'] ) : 0;
-	$submit_type = isset( $input['cozy_journal_submit'] ) ? sanitize_key( $input['cozy_journal_submit'] ) : 'draft';
-	$existing    = $post_id ? get_post( $post_id ) : null;
+	$input   = wp_unslash( $_POST );
+	$post_id = isset( $input['cozy_journal_post_id'] ) ? absint( $input['cozy_journal_post_id'] ) : 0;
+	if ( isset( $input['cozy_journal_submit'] ) ) {
+		$submit_type = sanitize_key( $input['cozy_journal_submit'] );
+	} elseif ( isset( $input['cozy_journal_submit_fallback'] ) ) {
+		$submit_type = sanitize_key( $input['cozy_journal_submit_fallback'] );
+	} else {
+		$submit_type = 'draft';
+	}
+	$existing = $post_id ? get_post( $post_id ) : null;
 
 	if ( $post_id && ( ! $existing || 'post' !== $existing->post_type || ! current_user_can( 'edit_post', $post_id ) ) ) {
 		wp_die( esc_html__( '你不能编辑这篇文章。', 'cozy-journal' ) );
@@ -486,6 +800,14 @@ function cozy_journal_save_frontend_post() {
 		exit;
 	}
 
+	if ( $existing ) {
+		$lock = cozy_journal_claim_writing_post_lock( $post_id );
+		if ( is_wp_error( $lock ) ) {
+			$state_token = cozy_journal_store_writing_form_state( $input, $post_id );
+			cozy_journal_writing_redirect( $post_id, '', 'post_locked', $state_token );
+		}
+	}
+
 	if ( 'publish' === $submit_type ) {
 		$post_status = current_user_can( 'publish_posts' ) ? 'publish' : 'pending';
 	} elseif ( $existing && in_array( $existing->post_status, $manual_statuses, true ) ) {
@@ -498,24 +820,25 @@ function cozy_journal_save_frontend_post() {
 
 	$post_data = cozy_journal_prepare_writing_post_data( $input, $post_id, $post_status );
 	if ( is_wp_error( $post_data ) ) {
-		cozy_journal_writing_redirect( $post_id, '', $post_data->get_error_code() );
+		$state_token = cozy_journal_store_writing_form_state( $input, $post_id );
+		cozy_journal_writing_redirect( $post_id, '', $post_data->get_error_code(), $state_token );
 	}
 
 	$saved_post_id = wp_insert_post( $post_data, true );
 	if ( is_wp_error( $saved_post_id ) ) {
-		cozy_journal_writing_redirect( $post_id, '', 'save_failed' );
+		$state_token = cozy_journal_store_writing_form_state( $input, $post_id );
+		cozy_journal_writing_redirect( $post_id, '', 'save_failed', $state_token );
 	}
 
-	if ( ! empty( $input['cozy_journal_remove_thumbnail'] ) && current_user_can( 'upload_files' ) ) {
-		delete_post_thumbnail( $saved_post_id );
-	}
+	cozy_journal_claim_writing_post_lock( $saved_post_id );
 
-	$media_error = false;
-	if (
+	$media_error        = false;
+	$has_featured_upload =
 		get_theme_mod( 'cozy_journal_allow_featured_upload', true ) &&
 		current_user_can( 'upload_files' ) &&
-		! empty( $_FILES['cozy_journal_featured_image']['name'] )
-	) {
+		! empty( $_FILES['cozy_journal_featured_image']['name'] );
+
+	if ( $has_featured_upload ) {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/media.php';
 		require_once ABSPATH . 'wp-admin/includes/image.php';
@@ -523,9 +846,15 @@ function cozy_journal_save_frontend_post() {
 		$attachment_id = media_handle_upload( 'cozy_journal_featured_image', $saved_post_id );
 		if ( is_wp_error( $attachment_id ) ) {
 			$media_error = true;
-		} else {
-			set_post_thumbnail( $saved_post_id, $attachment_id );
+		} elseif ( ! wp_attachment_is_image( $attachment_id ) ) {
+			wp_delete_attachment( $attachment_id, true );
+			$media_error = true;
+		} elseif ( ! set_post_thumbnail( $saved_post_id, $attachment_id ) ) {
+			wp_delete_attachment( $attachment_id, true );
+			$media_error = true;
 		}
+	} elseif ( ! empty( $input['cozy_journal_remove_thumbnail'] ) && current_user_can( 'upload_files' ) ) {
+		delete_post_thumbnail( $saved_post_id );
 	}
 
 	if ( 'preview' === $submit_type ) {
@@ -566,6 +895,11 @@ function cozy_journal_frontend_autosave() {
 			wp_send_json_error( array( 'message' => __( '不能自动保存这篇文章。', 'cozy-journal' ) ), 403 );
 		}
 
+		$lock = cozy_journal_claim_writing_post_lock( $post_id );
+		if ( is_wp_error( $lock ) ) {
+			wp_send_json_error( array( 'message' => $lock->get_error_message() ), 409 );
+		}
+
 		if ( ! in_array( $post->post_status, array( 'draft', 'pending' ), true ) ) {
 			wp_send_json_success(
 				array(
@@ -588,6 +922,8 @@ function cozy_journal_frontend_autosave() {
 		wp_send_json_error( array( 'message' => __( '草稿自动保存失败。', 'cozy-journal' ) ), 500 );
 	}
 
+	cozy_journal_claim_writing_post_lock( $saved_post_id );
+
 	wp_send_json_success(
 		array(
 			'postId'   => $saved_post_id,
@@ -598,3 +934,32 @@ function cozy_journal_frontend_autosave() {
 	);
 }
 add_action( 'wp_ajax_cozy_journal_frontend_autosave', 'cozy_journal_frontend_autosave' );
+
+/**
+ * Refreshes the current user's lock while the writing desk remains open.
+ */
+function cozy_journal_frontend_refresh_lock() {
+	check_ajax_referer( 'cozy_journal_frontend_autosave' );
+
+	if ( ! cozy_journal_writing_desk_enabled() || ! is_user_logged_in() || ! current_user_can( 'edit_posts' ) ) {
+		wp_send_json_error( array( 'message' => __( '没有写作权限。', 'cozy-journal' ) ), 403 );
+	}
+
+	$post_id = isset( $_POST['cozy_journal_post_id'] ) ? absint( $_POST['cozy_journal_post_id'] ) : 0;
+	if ( ! $post_id ) {
+		wp_send_json_success();
+	}
+
+	$post = get_post( $post_id );
+	if ( ! $post || 'post' !== $post->post_type || ! current_user_can( 'edit_post', $post_id ) ) {
+		wp_send_json_error( array( 'message' => __( '不能刷新这篇文章的编辑锁。', 'cozy-journal' ) ), 403 );
+	}
+
+	$lock = cozy_journal_claim_writing_post_lock( $post_id );
+	if ( is_wp_error( $lock ) ) {
+		wp_send_json_error( array( 'message' => $lock->get_error_message() ), 409 );
+	}
+
+	wp_send_json_success();
+}
+add_action( 'wp_ajax_cozy_journal_frontend_refresh_lock', 'cozy_journal_frontend_refresh_lock' );
