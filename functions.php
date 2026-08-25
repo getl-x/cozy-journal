@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'COZY_JOURNAL_VERSION' ) ) {
-	define( 'COZY_JOURNAL_VERSION', '1.2.1' );
+	define( 'COZY_JOURNAL_VERSION', '1.3.0' );
 }
 
 if ( ! defined( 'COZY_JOURNAL_NAME' ) ) {

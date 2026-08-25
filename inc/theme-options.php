@@ -61,9 +61,16 @@ function cozy_journal_get_theme_option_sections() {
 			'fields'      => array(
 				'cozy_journal_enable_writing_desk' => array(
 					'label'       => __( '启用前台手账写作台', 'cozy-journal' ),
-					'description' => __( '启用后，拥有文章编辑权限的登录用户可以访问 /write/。', 'cozy-journal' ),
+					'description' => __( '启用后，拥有文章编辑权限的登录用户可以访问下方设置的写作路径。', 'cozy-journal' ),
 					'type'        => 'checkbox',
 					'default'     => true,
+					'group'       => __( '入口与权限', 'cozy-journal' ),
+				),
+				'cozy_journal_writing_slug' => array(
+					'label'       => __( '写作页面路径', 'cozy-journal' ),
+					'description' => __( '只填写一段英文小写、数字、短横线或下划线，例如 journal-write。请勿与已有页面路径重复。', 'cozy-journal' ),
+					'type'        => 'slug',
+					'default'     => 'write',
 					'group'       => __( '入口与权限', 'cozy-journal' ),
 				),
 				'cozy_journal_show_write_link' => array(
@@ -555,6 +562,11 @@ function cozy_journal_sanitize_theme_option( $value, $field ) {
 		case 'url':
 			return esc_url_raw( $value );
 
+		case 'slug':
+			return function_exists( 'cozy_journal_sanitize_writing_slug' )
+				? cozy_journal_sanitize_writing_slug( $value )
+				: $default;
+
 		default:
 			return sanitize_text_field( $value );
 	}
@@ -840,6 +852,15 @@ function cozy_journal_render_option_field( $setting_id, $field ) {
 				</select>
 			<?php elseif ( 'textarea' === $type ) : ?>
 				<textarea id="<?php echo esc_attr( $field_id ); ?>" name="<?php echo esc_attr( $field_name ); ?>" rows="4"><?php echo esc_textarea( $value ); ?></textarea>
+			<?php elseif ( 'slug' === $type ) : ?>
+				<div class="cj-path-control">
+					<span aria-hidden="true">/</span>
+					<input id="<?php echo esc_attr( $field_id ); ?>" name="<?php echo esc_attr( $field_name ); ?>" type="text" value="<?php echo esc_attr( $value ); ?>" maxlength="60" pattern="[a-z0-9][a-z0-9_-]*" placeholder="write" autocomplete="off" spellcheck="false">
+					<span aria-hidden="true">/</span>
+				</div>
+				<?php if ( function_exists( 'cozy_journal_get_write_url' ) ) : ?>
+					<p class="cj-path-preview"><span><?php esc_html_e( '当前地址', 'cozy-journal' ); ?></span><code><?php echo esc_html( cozy_journal_get_write_url() ); ?></code></p>
+				<?php endif; ?>
 			<?php elseif ( 'range' === $type ) : ?>
 				<div class="cj-range-control">
 					<input id="<?php echo esc_attr( $field_id ); ?>" name="<?php echo esc_attr( $field_name ); ?>" type="range" value="<?php echo esc_attr( $value ); ?>" min="<?php echo esc_attr( $field['min'] ); ?>" max="<?php echo esc_attr( $field['max'] ); ?>" step="<?php echo esc_attr( $field['step'] ); ?>">

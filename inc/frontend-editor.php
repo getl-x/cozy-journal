@@ -10,6 +10,37 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Sanitizes the single URL segment used by the writing desk.
+ *
+ * @param mixed $value Raw path value.
+ * @return string
+ */
+function cozy_journal_sanitize_writing_slug( $value ) {
+	$slug = strtolower( remove_accents( wp_strip_all_tags( (string) $value ) ) );
+	$slug = trim( $slug );
+	$slug = trim( $slug, '/' );
+	$slug = preg_replace( '/[^a-z0-9_-]+/', '-', $slug );
+	$slug = trim( (string) $slug, '-_' );
+	$slug = substr( $slug, 0, 60 );
+
+	$reserved = array( '404', 'feed', 'wp-admin', 'wp-json', 'wp-login', 'wp-login-php' );
+	if ( ! $slug || in_array( $slug, $reserved, true ) || 0 === strpos( $slug, 'wp-' ) ) {
+		return 'write';
+	}
+
+	return $slug;
+}
+
+/**
+ * Returns the configured writing desk path segment.
+ *
+ * @return string
+ */
+function cozy_journal_get_writing_slug() {
+	return cozy_journal_sanitize_writing_slug( get_theme_mod( 'cozy_journal_writing_slug', 'write' ) );
+}
+
+/**
  * Returns the public writing desk URL.
  *
  * @param array $args Optional query arguments.
@@ -17,7 +48,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function cozy_journal_get_write_url( $args = array() ) {
 	if ( get_option( 'permalink_structure' ) ) {
-		$url = home_url( '/write/' );
+		$url = home_url( '/' . cozy_journal_get_writing_slug() . '/' );
 	} else {
 		$url = add_query_arg( 'cozy_journal_write', '1', home_url( '/' ) );
 	}
@@ -26,12 +57,35 @@ function cozy_journal_get_write_url( $args = array() ) {
 }
 
 /**
- * Registers the /write/ virtual page.
+ * Registers the configured virtual writing page.
  */
 function cozy_journal_register_writing_rewrite() {
-	add_rewrite_rule( '^write/?$', 'index.php?cozy_journal_write=1', 'top' );
+	$slug = preg_quote( cozy_journal_get_writing_slug(), '#' );
+	add_rewrite_rule( '^' . $slug . '/?$', 'index.php?cozy_journal_write=1', 'top' );
 }
 add_action( 'init', 'cozy_journal_register_writing_rewrite' );
+
+/**
+ * Resolves the current writing path immediately, even before rules refresh.
+ *
+ * It also rejects a stale previous writing path after the setting changes.
+ *
+ * @param WP $wp Current WordPress environment instance.
+ */
+function cozy_journal_resolve_writing_request( $wp ) {
+	if ( ! get_option( 'permalink_structure' ) ) {
+		return;
+	}
+
+	$request = trim( (string) $wp->request, '/' );
+	if ( cozy_journal_get_writing_slug() === $request ) {
+		$wp->query_vars['cozy_journal_write'] = '1';
+	} elseif ( isset( $wp->query_vars['cozy_journal_write'] ) ) {
+		unset( $wp->query_vars['cozy_journal_write'] );
+		$wp->query_vars['error'] = '404';
+	}
+}
+add_action( 'parse_request', 'cozy_journal_resolve_writing_request', 1 );
 
 /**
  * Adds the writing desk query variable.
@@ -46,17 +100,47 @@ function cozy_journal_writing_query_vars( $vars ) {
 add_filter( 'query_vars', 'cozy_journal_writing_query_vars' );
 
 /**
- * Flushes rewrite rules once when this feature version is installed.
+ * Returns the signature of the current writing rewrite configuration.
+ *
+ * @return string
+ */
+function cozy_journal_get_writing_rewrite_signature() {
+	return COZY_JOURNAL_VERSION . ':' . cozy_journal_get_writing_slug();
+}
+
+/**
+ * Flushes rewrite rules when the feature version or path changes.
  */
 function cozy_journal_maybe_flush_writing_rewrite() {
-	$stored_version = get_option( 'cozy_journal_rewrite_version', '' );
-	if ( COZY_JOURNAL_VERSION !== $stored_version ) {
+	$signature        = cozy_journal_get_writing_rewrite_signature();
+	$stored_signature = get_option( 'cozy_journal_rewrite_signature', '' );
+
+	if ( $signature !== $stored_signature ) {
 		cozy_journal_register_writing_rewrite();
 		flush_rewrite_rules( false );
-		update_option( 'cozy_journal_rewrite_version', COZY_JOURNAL_VERSION, false );
+		update_option( 'cozy_journal_rewrite_signature', $signature, false );
 	}
 }
 add_action( 'admin_init', 'cozy_journal_maybe_flush_writing_rewrite' );
+
+/**
+ * Marks rewrite rules stale when the writing path theme modification changes.
+ *
+ * @param mixed $old_value Previous theme modifications.
+ * @param mixed $value     Updated theme modifications.
+ */
+function cozy_journal_mark_writing_rewrite_stale( $old_value, $value ) {
+	$old_mods = is_array( $old_value ) ? $old_value : array();
+	$new_mods = is_array( $value ) ? $value : array();
+	$old_slug = cozy_journal_sanitize_writing_slug( isset( $old_mods['cozy_journal_writing_slug'] ) ? $old_mods['cozy_journal_writing_slug'] : 'write' );
+	$new_slug = cozy_journal_sanitize_writing_slug( isset( $new_mods['cozy_journal_writing_slug'] ) ? $new_mods['cozy_journal_writing_slug'] : 'write' );
+
+	if ( $old_slug !== $new_slug ) {
+		delete_option( 'cozy_journal_rewrite_signature' );
+		delete_option( 'rewrite_rules' );
+	}
+}
+add_action( 'update_option_theme_mods_' . get_option( 'stylesheet' ), 'cozy_journal_mark_writing_rewrite_stale', 10, 2 );
 
 /**
  * Reports whether the front-end editor is enabled.

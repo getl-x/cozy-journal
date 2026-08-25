@@ -199,7 +199,7 @@ function cozy_journal_customize_register( $wp_customize ) {
 		'cozy_journal_writing_section',
 		array(
 			'title'       => __( '前台写作', 'cozy-journal' ),
-			'description' => __( '设置 /write/ 手账写作台、快捷入口和草稿自动保存。', 'cozy-journal' ),
+			'description' => __( '设置手账写作台路径、快捷入口和草稿自动保存。', 'cozy-journal' ),
 			'panel'       => 'cozy_journal_theme_options',
 			'priority'    => 15,
 		)
@@ -208,7 +208,7 @@ function cozy_journal_customize_register( $wp_customize ) {
 	$writing_toggles = array(
 		'cozy_journal_enable_writing_desk' => array(
 			'label'       => __( '启用前台手账写作台', 'cozy-journal' ),
-			'description' => __( '拥有文章编辑权限的登录用户可以访问 /write/。', 'cozy-journal' ),
+			'description' => __( '拥有文章编辑权限的登录用户可以访问设置的写作路径。', 'cozy-journal' ),
 		),
 		'cozy_journal_show_write_link' => array(
 			'label'       => __( '在页头显示“写文章”', 'cozy-journal' ),
@@ -238,6 +238,28 @@ function cozy_journal_customize_register( $wp_customize ) {
 			)
 		);
 	}
+
+	$wp_customize->add_setting(
+		'cozy_journal_writing_slug',
+		array(
+			'default'           => 'write',
+			'sanitize_callback' => 'cozy_journal_sanitize_writing_slug',
+		)
+	);
+	$wp_customize->add_control(
+		'cozy_journal_writing_slug',
+		array(
+			'label'       => __( '写作页面路径', 'cozy-journal' ),
+			'description' => __( '只填写一段英文小写、数字、短横线或下划线；请勿与已有页面路径重复。', 'cozy-journal' ),
+			'section'     => 'cozy_journal_writing_section',
+			'type'        => 'text',
+			'input_attrs' => array(
+				'placeholder' => 'write',
+				'maxlength'  => 60,
+				'pattern'    => '[a-z0-9][a-z0-9_-]*',
+			),
+		)
+	);
 
 	$wp_customize->add_setting(
 		'cozy_journal_writing_autosave_interval',
