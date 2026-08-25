@@ -77,6 +77,23 @@ function cozy_journal_is_writing_desk() {
 }
 
 /**
+ * Hides the private writing route from logged-out visitors.
+ *
+ * Logged-out requests are sent to the site's /404/ URL before the writing
+ * template or its login form can be rendered.
+ */
+function cozy_journal_redirect_logged_out_writers() {
+	if ( ! cozy_journal_is_writing_desk() || is_user_logged_in() ) {
+		return;
+	}
+
+	nocache_headers();
+	wp_safe_redirect( home_url( '/404/' ), 302, 'Cozy Journal' );
+	exit;
+}
+add_action( 'template_redirect', 'cozy_journal_redirect_logged_out_writers', -1 );
+
+/**
  * Keeps the private writing screen out of caches and search indexes.
  */
 function cozy_journal_writing_request_headers() {

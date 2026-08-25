@@ -739,48 +739,6 @@
 	color: var(--journal-muted);
 }
 
-.writing-login-form {
-	max-width: 390px;
-	margin: 25px auto 0;
-	padding: 24px;
-	border: 1px dashed rgba(79, 65, 59, 0.2);
-	border-radius: 12px;
-	background: #fffaf3;
-	text-align: left;
-}
-
-.writing-login-form label {
-	display: block;
-	margin-bottom: 4px;
-	font-size: 0.76rem;
-	font-weight: 700;
-}
-
-.writing-login-form input[type="text"],
-.writing-login-form input[type="password"] {
-	width: 100%;
-	min-height: 43px;
-	padding: 8px 11px;
-	border: 1px solid rgba(79, 65, 59, 0.18);
-	border-radius: 8px;
-	background: #fff;
-}
-
-.writing-login-form .login-remember label {
-	display: flex;
-	align-items: center;
-	gap: 7px;
-	font-weight: 400;
-}
-
-.writing-login-form .login-submit {
-	margin-bottom: 0;
-}
-
-.writing-login-form .button-primary {
-	width: 100%;
-}
-
 @media (max-width: 1120px) {
 	.writing-desk-form {
 		grid-template-columns: minmax(0, 1fr) 280px;

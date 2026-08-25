@@ -12,28 +12,7 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 
 <main id="primary" class="site-main writing-desk-main">
 	<div class="writing-desk-container">
-		<?php if ( ! is_user_logged_in() ) : ?>
-			<section class="writing-access-paper journal-paper">
-				<div class="writing-access-sticker" aria-hidden="true">✎</div>
-				<p class="section-kicker"><?php esc_html_e( 'Private journal room', 'cozy-journal' ); ?></p>
-				<h1><?php esc_html_e( '先登录，再翻开写作页', 'cozy-journal' ); ?></h1>
-				<p><?php esc_html_e( '这里是站点作者的前台写作空间。登录成功后，就可以写文章、存草稿、预览并发布到 WordPress。', 'cozy-journal' ); ?></p>
-				<div class="writing-login-form">
-					<?php
-					wp_login_form(
-						array(
-							'redirect'       => cozy_journal_get_write_url(),
-							'remember'       => true,
-							'label_username' => __( '用户名或邮箱', 'cozy-journal' ),
-							'label_password' => __( '密码', 'cozy-journal' ),
-							'label_remember' => __( '记住我', 'cozy-journal' ),
-							'label_log_in'   => __( '进入写作台', 'cozy-journal' ),
-						)
-					);
-					?>
-				</div>
-			</section>
-		<?php elseif ( ! current_user_can( 'edit_posts' ) ) : ?>
+		<?php if ( ! current_user_can( 'edit_posts' ) ) : ?>
 			<section class="writing-access-paper journal-paper">
 				<div class="writing-access-sticker" aria-hidden="true">🔒</div>
 				<p class="section-kicker"><?php esc_html_e( 'Permission required', 'cozy-journal' ); ?></p>
