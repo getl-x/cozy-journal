@@ -12,12 +12,12 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 
 <main id="primary" class="site-main writing-desk-main">
 	<div class="writing-desk-container">
-		<?php if ( ! current_user_can( 'edit_posts' ) ) : ?>
+		<?php if ( ! cozy_journal_current_user_can_access_writing_desk() ) : ?>
 			<section class="writing-access-paper journal-paper">
 				<div class="writing-access-sticker" aria-hidden="true">🔒</div>
 				<p class="section-kicker"><?php esc_html_e( 'Permission required', 'cozy-journal' ); ?></p>
 				<h1><?php esc_html_e( '这个账号暂时不能写文章', 'cozy-journal' ); ?></h1>
-				<p><?php esc_html_e( '请使用作者、编辑或管理员账号登录，或者请站点管理员为当前账号开放文章编辑权限。', 'cozy-journal' ); ?></p>
+				<p><?php esc_html_e( '请使用作者、编辑或管理员账号登录，或者请站点管理员为当前账号开放文章新建或目标文章编辑权限。', 'cozy-journal' ); ?></p>
 				<a class="journal-button" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php esc_html_e( '返回网站首页', 'cozy-journal' ); ?></a>
 			</section>
 		<?php else : ?>
@@ -26,9 +26,12 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 			$requested_post     = cozy_journal_get_requested_writing_post();
 			$request_error      = is_wp_error( $requested_post ) ? $requested_post->get_error_message() : '';
 			$request_error_code = is_wp_error( $requested_post ) ? $requested_post->get_error_code() : '';
-			$writing_post       = $requested_post instanceof WP_Post ? $requested_post : null;
-			$form_state         = cozy_journal_take_writing_form_state( $requested_post_id );
-			$show_writing_form  = ! $request_error || $form_state;
+			$writing_post          = $requested_post instanceof WP_Post ? $requested_post : null;
+			$can_publish_posts     = cozy_journal_current_user_can_publish_writing_posts();
+			$can_assign_categories = cozy_journal_current_user_can_assign_writing_terms( 'category' );
+			$can_assign_tags       = cozy_journal_current_user_can_assign_writing_terms( 'post_tag' );
+			$form_state            = cozy_journal_take_writing_form_state( $requested_post_id );
+			$show_writing_form     = ! $request_error || $form_state;
 			if ( ! $writing_post && $form_state && 'post_locked' === $request_error_code ) {
 				$locked_post = get_post( absint( $form_state['post_id'] ) );
 				if ( $locked_post && 'post' === $locked_post->post_type && current_user_can( 'edit_post', $locked_post->ID ) ) {
@@ -40,22 +43,24 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 			$post_content       = $writing_post ? $writing_post->post_content : '';
 			$post_excerpt       = $writing_post ? $writing_post->post_excerpt : '';
 			$post_status        = $writing_post ? $writing_post->post_status : 'draft';
-			$selected_cats      = $writing_post ? wp_get_post_categories( $post_id ) : array( absint( get_option( 'default_category' ) ) );
-			$post_tags          = $writing_post ? wp_get_post_tags( $post_id, array( 'fields' => 'names' ) ) : array();
+			$selected_cats      = $can_assign_categories ? ( $writing_post ? wp_get_post_categories( $post_id ) : array( absint( get_option( 'default_category' ) ) ) ) : array();
+			$post_tags          = $can_assign_tags && $writing_post ? wp_get_post_tags( $post_id, array( 'fields' => 'names' ) ) : array();
 			$tag_string         = implode( '，', $post_tags );
 			$comments_open      = $writing_post ? 'open' === $writing_post->comment_status : true;
-			$remove_thumbnail = false;
-			$thumbnail_url  = $writing_post && has_post_thumbnail( $post_id ) ? get_the_post_thumbnail_url( $post_id, 'medium_large' ) : '';
-			$manual_status  = $writing_post && in_array( $post_status, array( 'publish', 'private', 'future' ), true );
-			$saved_view_url = $manual_status && 'publish' !== $post_status ? get_preview_post_link( $writing_post ) : ( $writing_post ? get_permalink( $writing_post ) : '' );
-			$current_user   = wp_get_current_user();
-			$categories     = get_categories(
-				array(
-					'hide_empty' => false,
-					'orderby'    => 'name',
-					'order'      => 'ASC',
+			$remove_thumbnail     = false;
+			$thumbnail_url        = $writing_post && has_post_thumbnail( $post_id ) ? get_the_post_thumbnail_url( $post_id, 'medium_large' ) : '';
+			$manual_status        = $writing_post && in_array( $post_status, array( 'publish', 'private', 'future' ), true );
+			$saved_view_url       = $manual_status && 'publish' !== $post_status ? get_preview_post_link( $writing_post ) : ( $writing_post ? get_permalink( $writing_post ) : '' );
+			$current_user         = wp_get_current_user();
+			$categories           = $can_assign_categories
+				? get_categories(
+					array(
+						'hide_empty' => false,
+						'orderby'    => 'name',
+						'order'      => 'ASC',
+					)
 				)
-			);
+				: array();
 			$status_labels = array(
 				'draft'   => __( '草稿', 'cozy-journal' ),
 				'pending' => __( '等待审核', 'cozy-journal' ),
@@ -82,10 +87,14 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 				$post_title        = $form_state['title'];
 				$post_content      = $form_state['content'];
 				$post_excerpt      = $form_state['excerpt'];
-				$selected_cats     = $form_state['categories'] ? $form_state['categories'] : array( absint( get_option( 'default_category' ) ) );
-				$tag_string        = $form_state['tags'];
-				$comments_open     = ! empty( $form_state['comments_open'] );
-				$remove_thumbnail  = ! empty( $form_state['remove_thumbnail'] );
+				if ( $can_assign_categories ) {
+					$selected_cats = $form_state['categories'] ? $form_state['categories'] : array( absint( get_option( 'default_category' ) ) );
+				}
+				if ( $can_assign_tags ) {
+					$tag_string = $form_state['tags'];
+				}
+				$comments_open    = ! empty( $form_state['comments_open'] );
+				$remove_thumbnail = ! empty( $form_state['remove_thumbnail'] );
 			}
 			$recent_posts = get_posts(
 				array(
@@ -217,12 +226,13 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 								<span aria-hidden="true">◉</span><?php esc_html_e( '保存并预览这一页', 'cozy-journal' ); ?>
 							</button>
 						<?php endif; ?>
-						<button class="writing-action-button writing-publish-button" type="submit" name="cozy_journal_submit" value="publish" data-writing-confirm="<?php echo esc_attr( current_user_can( 'publish_posts' ) ? __( '确定要把这一页公开发布吗？', 'cozy-journal' ) : __( '确定要把这一页提交审核吗？', 'cozy-journal' ) ); ?>">
-							<span aria-hidden="true">→</span><?php echo current_user_can( 'publish_posts' ) ? esc_html__( '发布这一页', 'cozy-journal' ) : esc_html__( '提交审核', 'cozy-journal' ); ?>
+						<button class="writing-action-button writing-publish-button" type="submit" name="cozy_journal_submit" value="publish" data-writing-confirm="<?php echo esc_attr( $can_publish_posts ? __( '确定要把这一页公开发布吗？', 'cozy-journal' ) : __( '确定要把这一页提交审核吗？', 'cozy-journal' ) ); ?>">
+							<span aria-hidden="true">→</span><?php echo $can_publish_posts ? esc_html__( '发布这一页', 'cozy-journal' ) : esc_html__( '提交审核', 'cozy-journal' ); ?>
 						</button>
 					</section>
 
-					<section class="writing-settings-card">
+					<?php if ( $can_assign_categories ) : ?>
+						<section class="writing-settings-card">
 						<div class="writing-card-heading"><span aria-hidden="true">⌑</span><h2><?php esc_html_e( '分类', 'cozy-journal' ); ?></h2></div>
 						<div class="writing-category-list">
 							<?php if ( $categories ) : ?>
@@ -236,14 +246,17 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 								<p><?php esc_html_e( '还没有创建分类，将使用默认分类。', 'cozy-journal' ); ?></p>
 							<?php endif; ?>
 						</div>
-					</section>
+						</section>
+					<?php endif; ?>
 
-					<section class="writing-settings-card">
+					<?php if ( $can_assign_tags ) : ?>
+						<section class="writing-settings-card">
 						<div class="writing-card-heading"><span aria-hidden="true">#</span><h2><?php esc_html_e( '标签', 'cozy-journal' ); ?></h2></div>
 						<label class="screen-reader-text" for="cozy-journal-tags"><?php esc_html_e( '文章标签', 'cozy-journal' ); ?></label>
 						<input id="cozy-journal-tags" type="text" name="cozy_journal_tags" value="<?php echo esc_attr( $tag_string ); ?>" placeholder="<?php esc_attr_e( '晚霞，散步，日常', 'cozy-journal' ); ?>">
 						<p><?php esc_html_e( '多个标签请用中文或英文逗号隔开。', 'cozy-journal' ); ?></p>
-					</section>
+						</section>
+					<?php endif; ?>
 
 					<?php if ( get_theme_mod( 'cozy_journal_allow_featured_upload', true ) && current_user_can( 'upload_files' ) ) : ?>
 						<section class="writing-settings-card">

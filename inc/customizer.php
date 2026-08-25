@@ -229,11 +229,11 @@ function cozy_journal_customize_register( $wp_customize ) {
 	$writing_toggles = array(
 		'cozy_journal_enable_writing_desk' => array(
 			'label'       => __( '启用前台手账写作台', 'cozy-journal' ),
-			'description' => __( '拥有文章编辑权限的登录用户可以访问设置的写作路径。', 'cozy-journal' ),
+			'description' => __( '拥有文章新建权限的登录用户可以访问设置的写作路径。', 'cozy-journal' ),
 		),
 		'cozy_journal_show_write_link' => array(
 			'label'       => __( '在页头显示“写文章”', 'cozy-journal' ),
-			'description' => __( '只对已登录并拥有文章编辑权限的用户显示。', 'cozy-journal' ),
+			'description' => __( '只对已登录并拥有文章新建权限的用户显示。', 'cozy-journal' ),
 		),
 		'cozy_journal_allow_featured_upload' => array(
 			'label'       => __( '允许上传特色图片', 'cozy-journal' ),

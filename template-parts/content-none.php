@@ -15,9 +15,8 @@
 		<?php get_search_form(); ?>
 	<?php else : ?>
 		<p><?php esc_html_e( '等第一篇故事写好，这里就会慢慢热闹起来。', 'cozy-journal' ); ?></p>
-		<?php if ( current_user_can( 'publish_posts' ) ) : ?>
+		<?php if ( function_exists( 'cozy_journal_current_user_can_create_writing_posts' ) && cozy_journal_current_user_can_create_writing_posts() ) : ?>
 			<a class="journal-button" href="<?php echo esc_url( admin_url( 'post-new.php' ) ); ?>"><?php esc_html_e( '写下第一篇', 'cozy-journal' ); ?></a>
 		<?php endif; ?>
 	<?php endif; ?>
 </section>
-

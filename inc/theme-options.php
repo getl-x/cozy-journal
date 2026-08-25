@@ -61,7 +61,7 @@ function cozy_journal_get_theme_option_sections() {
 			'fields'      => array(
 				'cozy_journal_enable_writing_desk' => array(
 					'label'       => __( '启用前台手账写作台', 'cozy-journal' ),
-					'description' => __( '启用后，拥有文章编辑权限的登录用户可以访问下方设置的写作路径。', 'cozy-journal' ),
+					'description' => __( '启用后，拥有文章新建权限的登录用户可以访问下方设置的写作路径。', 'cozy-journal' ),
 					'type'        => 'checkbox',
 					'default'     => true,
 					'group'       => __( '入口与权限', 'cozy-journal' ),
@@ -75,7 +75,7 @@ function cozy_journal_get_theme_option_sections() {
 				),
 				'cozy_journal_show_write_link' => array(
 					'label'       => __( '在页头显示“写文章”', 'cozy-journal' ),
-					'description' => __( '只对已登录并拥有文章编辑权限的用户显示。', 'cozy-journal' ),
+					'description' => __( '只对已登录并拥有文章新建权限的用户显示。', 'cozy-journal' ),
 					'type'        => 'checkbox',
 					'default'     => true,
 					'group'       => __( '入口与权限', 'cozy-journal' ),
@@ -970,7 +970,7 @@ function cozy_journal_render_welcome_panel() {
 			<p><?php esc_html_e( '感谢使用 Cozy Journal。这里可以集中调整整本手账的颜色、首页、文章布局和装饰，也可以随时备份自己的搭配。', 'cozy-journal' ); ?></p>
 			<div class="cj-welcome-actions">
 				<a class="button button-primary cj-primary-button" href="<?php echo esc_url( admin_url( 'admin.php?page=' . $sections['initial']['page'] ) ); ?>"><?php esc_html_e( '开始设置', 'cozy-journal' ); ?></a>
-				<?php if ( function_exists( 'cozy_journal_get_write_url' ) && cozy_journal_writing_desk_enabled() && current_user_can( 'edit_posts' ) ) : ?>
+				<?php if ( function_exists( 'cozy_journal_get_write_url' ) && cozy_journal_writing_desk_enabled() && cozy_journal_current_user_can_create_writing_posts() ) : ?>
 					<a class="button cj-secondary-button" href="<?php echo esc_url( cozy_journal_get_write_url() ); ?>" target="_blank" rel="noopener noreferrer"><span class="dashicons dashicons-edit-page"></span><?php esc_html_e( '打开写作台', 'cozy-journal' ); ?></a>
 				<?php endif; ?>
 				<a class="button cj-secondary-button" href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( '查看网站', 'cozy-journal' ); ?><span class="dashicons dashicons-external"></span></a>

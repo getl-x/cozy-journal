@@ -324,6 +324,73 @@ function cozy_journal_writing_desk_enabled() {
 }
 
 /**
+ * Returns the post type object used by the writing desk.
+ *
+ * @return WP_Post_Type|null
+ */
+function cozy_journal_get_writing_post_type_object() {
+	return get_post_type_object( 'post' );
+}
+
+/**
+ * Reports whether the current user may create posts from the writing desk.
+ *
+ * @return bool
+ */
+function cozy_journal_current_user_can_create_writing_posts() {
+	$post_type = cozy_journal_get_writing_post_type_object();
+
+	return $post_type && current_user_can( $post_type->cap->create_posts );
+}
+
+/**
+ * Reports whether the current user may publish posts from the writing desk.
+ *
+ * @return bool
+ */
+function cozy_journal_current_user_can_publish_writing_posts() {
+	$post_type = cozy_journal_get_writing_post_type_object();
+
+	return $post_type && current_user_can( $post_type->cap->publish_posts );
+}
+
+/**
+ * Reports whether the current user may open the requested writing screen.
+ *
+ * Users without post-creation capability may still open a specific post when
+ * an object-level capability filter explicitly grants access to that post.
+ *
+ * @return bool
+ */
+function cozy_journal_current_user_can_access_writing_desk() {
+	if ( ! is_user_logged_in() ) {
+		return false;
+	}
+
+	$post_id = isset( $_GET['post_id'] ) ? absint( $_GET['post_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	if ( $post_id ) {
+		$post = get_post( $post_id );
+		if ( $post && 'post' === $post->post_type && current_user_can( 'edit_post', $post_id ) ) {
+			return true;
+		}
+	}
+
+	return cozy_journal_current_user_can_create_writing_posts();
+}
+
+/**
+ * Reports whether the current user may assign terms in one writing taxonomy.
+ *
+ * @param string $taxonomy Taxonomy name.
+ * @return bool
+ */
+function cozy_journal_current_user_can_assign_writing_terms( $taxonomy ) {
+	$taxonomy_object = get_taxonomy( $taxonomy );
+
+	return $taxonomy_object && current_user_can( $taxonomy_object->cap->assign_terms );
+}
+
+/**
  * Returns whether the current request is the virtual writing desk.
  *
  * @return bool
@@ -355,6 +422,7 @@ add_action( 'template_redirect', 'cozy_journal_redirect_logged_out_writers', -1 
 function cozy_journal_writing_request_headers() {
 	if ( cozy_journal_is_writing_desk() ) {
 		nocache_headers();
+		send_frame_options_header();
 		header( 'X-Robots-Tag: noindex, nofollow', true );
 	}
 }
@@ -448,15 +516,17 @@ function cozy_journal_store_writing_form_state( $input, $post_id = 0 ) {
 		return '';
 	}
 
-	$token = strtolower( wp_generate_password( 20, false, false ) );
-	$state = array(
+	$token                 = strtolower( wp_generate_password( 20, false, false ) );
+	$can_assign_categories = cozy_journal_current_user_can_assign_writing_terms( 'category' );
+	$can_assign_tags       = cozy_journal_current_user_can_assign_writing_terms( 'post_tag' );
+	$state                 = array(
 		'user_id'             => $user_id,
 		'post_id'             => absint( $post_id ),
 		'title'               => isset( $input['cozy_journal_title'] ) ? sanitize_text_field( $input['cozy_journal_title'] ) : '',
 		'content'             => isset( $input['cozy_journal_content'] ) ? wp_kses_post( $input['cozy_journal_content'] ) : '',
 		'excerpt'             => isset( $input['cozy_journal_excerpt'] ) ? sanitize_textarea_field( $input['cozy_journal_excerpt'] ) : '',
-		'categories'          => isset( $input['cozy_journal_categories'] ) ? cozy_journal_sanitize_writing_categories( $input['cozy_journal_categories'] ) : array(),
-		'tags'                => isset( $input['cozy_journal_tags'] ) ? sanitize_text_field( $input['cozy_journal_tags'] ) : '',
+		'categories'          => $can_assign_categories && isset( $input['cozy_journal_categories'] ) ? cozy_journal_sanitize_writing_categories( $input['cozy_journal_categories'] ) : array(),
+		'tags'                => $can_assign_tags && isset( $input['cozy_journal_tags'] ) ? sanitize_text_field( $input['cozy_journal_tags'] ) : '',
 		'comments_open'       => ! empty( $input['cozy_journal_comments_open'] ),
 		'remove_thumbnail'    => ! empty( $input['cozy_journal_remove_thumbnail'] ),
 		'had_featured_upload' => ! empty( $_FILES['cozy_journal_featured_image']['name'] ),
@@ -475,15 +545,13 @@ function cozy_journal_store_writing_form_state( $input, $post_id = 0 ) {
  */
 function cozy_journal_take_writing_form_state( $post_id = 0 ) {
 	$token = isset( $_GET['write_state'] ) ? sanitize_key( wp_unslash( $_GET['write_state'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	if ( ! $token ) {
+	if ( ! preg_match( '/^[a-z0-9]{20}$/D', $token ) ) {
 		return array();
 	}
 
 	$user_id = get_current_user_id();
 	$key     = cozy_journal_get_writing_form_state_key( $user_id, $token );
 	$state   = get_transient( $key );
-
-	delete_transient( $key );
 
 	if (
 		! is_array( $state ) ||
@@ -492,6 +560,8 @@ function cozy_journal_take_writing_form_state( $post_id = 0 ) {
 	) {
 		return array();
 	}
+
+	delete_transient( $key );
 
 	return $state;
 }
@@ -586,7 +656,7 @@ function cozy_journal_writing_assets() {
 		COZY_JOURNAL_VERSION
 	);
 
-	if ( is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
+	if ( cozy_journal_current_user_can_access_writing_desk() ) {
 		if ( function_exists( 'wp_enqueue_editor' ) ) {
 			wp_enqueue_editor();
 		}
@@ -649,7 +719,7 @@ add_action( 'wp_enqueue_scripts', 'cozy_journal_writing_assets', 20 );
  * @param WP_Admin_Bar $wp_admin_bar Toolbar instance.
  */
 function cozy_journal_writing_admin_bar_link( $wp_admin_bar ) {
-	if ( ! cozy_journal_writing_desk_enabled() || ! current_user_can( 'edit_posts' ) ) {
+	if ( ! cozy_journal_writing_desk_enabled() || ! cozy_journal_current_user_can_create_writing_posts() ) {
 		return;
 	}
 
@@ -708,17 +778,6 @@ function cozy_journal_prepare_writing_post_data( $input, $post_id, $post_status,
 		return new WP_Error( 'missing_content', __( '正文还是空白的，请写下一点内容。', 'cozy-journal' ) );
 	}
 
-	$categories = isset( $input['cozy_journal_categories'] )
-		? cozy_journal_sanitize_writing_categories( $input['cozy_journal_categories'] )
-		: array();
-
-	if ( ! $categories ) {
-		$categories = array( absint( get_option( 'default_category' ) ) );
-	}
-
-	$tags = isset( $input['cozy_journal_tags'] ) ? sanitize_text_field( $input['cozy_journal_tags'] ) : '';
-	$tags = str_replace( array( '，', '、', ';', '；' ), ',', $tags );
-
 	$data = array(
 		'ID'             => $post_id,
 		'post_type'      => 'post',
@@ -726,16 +785,51 @@ function cozy_journal_prepare_writing_post_data( $input, $post_id, $post_status,
 		'post_content'   => $content,
 		'post_excerpt'   => isset( $input['cozy_journal_excerpt'] ) ? sanitize_textarea_field( $input['cozy_journal_excerpt'] ) : '',
 		'post_status'    => $post_status,
-		'post_category'  => $categories,
-		'tags_input'     => $tags,
 		'comment_status' => ! empty( $input['cozy_journal_comments_open'] ) ? 'open' : 'closed',
 	);
+
+	if ( cozy_journal_current_user_can_assign_writing_terms( 'category' ) ) {
+		$categories = isset( $input['cozy_journal_categories'] )
+			? cozy_journal_sanitize_writing_categories( $input['cozy_journal_categories'] )
+			: array();
+
+		if ( ! $categories ) {
+			$categories = array( absint( get_option( 'default_category' ) ) );
+		}
+
+		$data['post_category'] = $categories;
+	}
+
+	if ( cozy_journal_current_user_can_assign_writing_terms( 'post_tag' ) ) {
+		$tags               = isset( $input['cozy_journal_tags'] ) ? sanitize_text_field( $input['cozy_journal_tags'] ) : '';
+		$data['tags_input'] = str_replace( array( '，', '、', ';', '；' ), ',', $tags );
+	}
 
 	if ( ! $post_id ) {
 		$data['post_author'] = get_current_user_id();
 	}
 
 	return $data;
+}
+
+/**
+ * Creates a post or safely updates an existing post without resetting fields
+ * that are not exposed by the front-end writing form.
+ *
+ * @param array $post_data Sanitized, unslashed post data.
+ * @param int   $post_id   Existing post ID, if any.
+ * @return int|WP_Error
+ */
+function cozy_journal_persist_writing_post( $post_data, $post_id = 0 ) {
+	$post_id   = absint( $post_id );
+	$post_data = wp_slash( $post_data );
+
+	if ( $post_id ) {
+		$post_data['ID'] = $post_id;
+		return wp_update_post( $post_data, true );
+	}
+
+	return wp_insert_post( $post_data, true );
 }
 
 /**
@@ -769,7 +863,7 @@ function cozy_journal_writing_redirect( $post_id = 0, $notice = '', $error = '',
  * Handles manual draft, preview and publish actions.
  */
 function cozy_journal_save_frontend_post() {
-	if ( ! cozy_journal_writing_desk_enabled() || ! is_user_logged_in() || ! current_user_can( 'edit_posts' ) ) {
+	if ( ! cozy_journal_writing_desk_enabled() || ! is_user_logged_in() ) {
 		wp_die( esc_html__( '你没有权限从前台写文章。', 'cozy-journal' ) );
 	}
 
@@ -788,6 +882,10 @@ function cozy_journal_save_frontend_post() {
 
 	if ( $post_id && ( ! $existing || 'post' !== $existing->post_type || ! current_user_can( 'edit_post', $post_id ) ) ) {
 		wp_die( esc_html__( '你不能编辑这篇文章。', 'cozy-journal' ) );
+	}
+
+	if ( ! $post_id && ! cozy_journal_current_user_can_create_writing_posts() ) {
+		wp_die( esc_html__( '你没有权限创建新文章。', 'cozy-journal' ) );
 	}
 
 	$manual_statuses = array( 'publish', 'private', 'future' );
@@ -809,7 +907,13 @@ function cozy_journal_save_frontend_post() {
 	}
 
 	if ( 'publish' === $submit_type ) {
-		$post_status = current_user_can( 'publish_posts' ) ? 'publish' : 'pending';
+		if ( cozy_journal_current_user_can_publish_writing_posts() ) {
+			$post_status = 'publish';
+		} elseif ( $existing && in_array( $existing->post_status, array( 'publish', 'future' ), true ) ) {
+			$post_status = $existing->post_status;
+		} else {
+			$post_status = 'pending';
+		}
 	} elseif ( $existing && in_array( $existing->post_status, $manual_statuses, true ) ) {
 		$post_status = $existing->post_status;
 	} elseif ( 'preview' === $submit_type && $existing && 'pending' === $existing->post_status ) {
@@ -824,7 +928,7 @@ function cozy_journal_save_frontend_post() {
 		cozy_journal_writing_redirect( $post_id, '', $post_data->get_error_code(), $state_token );
 	}
 
-	$saved_post_id = wp_insert_post( $post_data, true );
+	$saved_post_id = cozy_journal_persist_writing_post( $post_data, $post_id );
 	if ( is_wp_error( $saved_post_id ) ) {
 		$state_token = cozy_journal_store_writing_form_state( $input, $post_id );
 		cozy_journal_writing_redirect( $post_id, '', 'save_failed', $state_token );
@@ -881,7 +985,7 @@ add_action( 'admin_post_cozy_journal_save_frontend_post', 'cozy_journal_save_fro
 function cozy_journal_frontend_autosave() {
 	check_ajax_referer( 'cozy_journal_frontend_autosave' );
 
-	if ( ! cozy_journal_writing_desk_enabled() || ! is_user_logged_in() || ! current_user_can( 'edit_posts' ) ) {
+	if ( ! cozy_journal_writing_desk_enabled() || ! is_user_logged_in() ) {
 		wp_send_json_error( array( 'message' => __( '没有写作权限。', 'cozy-journal' ) ), 403 );
 	}
 
@@ -910,6 +1014,8 @@ function cozy_journal_frontend_autosave() {
 		}
 
 		$status = $post->post_status;
+	} elseif ( ! cozy_journal_current_user_can_create_writing_posts() ) {
+		wp_send_json_error( array( 'message' => __( '没有创建新文章的权限。', 'cozy-journal' ) ), 403 );
 	}
 
 	$post_data = cozy_journal_prepare_writing_post_data( $input, $post_id, $status, true );
@@ -917,7 +1023,7 @@ function cozy_journal_frontend_autosave() {
 		wp_send_json_error( array( 'message' => $post_data->get_error_message() ), 400 );
 	}
 
-	$saved_post_id = wp_insert_post( $post_data, true );
+	$saved_post_id = cozy_journal_persist_writing_post( $post_data, $post_id );
 	if ( is_wp_error( $saved_post_id ) ) {
 		wp_send_json_error( array( 'message' => __( '草稿自动保存失败。', 'cozy-journal' ) ), 500 );
 	}
@@ -941,7 +1047,7 @@ add_action( 'wp_ajax_cozy_journal_frontend_autosave', 'cozy_journal_frontend_aut
 function cozy_journal_frontend_refresh_lock() {
 	check_ajax_referer( 'cozy_journal_frontend_autosave' );
 
-	if ( ! cozy_journal_writing_desk_enabled() || ! is_user_logged_in() || ! current_user_can( 'edit_posts' ) ) {
+	if ( ! cozy_journal_writing_desk_enabled() || ! is_user_logged_in() ) {
 		wp_send_json_error( array( 'message' => __( '没有写作权限。', 'cozy-journal' ) ), 403 );
 	}
 
