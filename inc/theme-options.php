@@ -450,7 +450,7 @@ function cozy_journal_get_admin_navigation() {
 function cozy_journal_register_options_menu() {
 	add_menu_page(
 		__( 'Cozy Journal 主题设置', 'cozy-journal' ),
-		__( '手账主题设置', 'cozy-journal' ),
+		__( 'Cozy Journal 设置', 'cozy-journal' ),
 		'edit_theme_options',
 		'cozy-journal-settings',
 		'cozy_journal_render_options_page',
@@ -499,7 +499,7 @@ function cozy_journal_options_admin_assets( $hook_suffix ) {
 		'cozy-journal-admin-options',
 		'cozyJournalAdmin',
 		array(
-			'chooseBackup' => __( '请选择一个 Cozy Journal JSON 备份或样式模板。', 'cozy-journal' ),
+			'chooseBackup' => __( '请选择一个Cozy Journal JSON 备份文件。', 'cozy-journal' ),
 		)
 	);
 }
@@ -837,13 +837,13 @@ function cozy_journal_render_options_notice() {
 	$messages = array(
 		'saved'         => __( '设置已经保存，前台会立即使用新的样式。', 'cozy-journal' ),
 		'reset_section' => __( '当前分区已经恢复为主题默认值。', 'cozy-journal' ),
-		'reset_all'     => __( '全部 Cozy Journal 设置已经恢复为默认值。', 'cozy-journal' ),
+		'reset_all'     => __( '全部Cozy Journal 设置已经恢复为默认值。', 'cozy-journal' ),
 		'imported'      => __( '备份导入成功，设置已经恢复。', 'cozy-journal' ),
 	);
 	$errors = array(
 		'missing_file'          => __( '没有收到可用的备份文件，请重新选择。', 'cozy-journal' ),
 		'file_too_large'        => __( '备份文件超过 1MB，已拒绝导入。', 'cozy-journal' ),
-		'invalid_backup'        => __( '这个文件不是有效的 Cozy Journal 设置备份或样式模板。', 'cozy-journal' ),
+		'invalid_backup'        => __( '这个文件不是有效的Cozy Journal 设置备份。', 'cozy-journal' ),
 		'invalid_writing_slug'  => __( '写作页面路径格式无效，请使用英文小写字母、数字、短横线或下划线。', 'cozy-journal' ),
 		'writing_slug_conflict' => __( '写作页面路径与现有页面、归档或 WordPress 系统路径冲突，请换一个名称。', 'cozy-journal' ),
 	);
@@ -965,9 +965,9 @@ function cozy_journal_render_welcome_panel() {
 	?>
 	<div class="cj-welcome-hero">
 		<div class="cj-welcome-copy">
-			<span class="cj-kicker"><?php esc_html_e( 'Welcome to Cozy Journal', 'cozy-journal' ); ?></span>
+			<span class="cj-kicker"><?php esc_html_e( '欢迎来到 Cozy Journal', 'cozy-journal' ); ?></span>
 			<h2><?php esc_html_e( '你好！', 'cozy-journal' ); ?></h2>
-			<p><?php esc_html_e( '感谢使用 Cozy Journal。这里可以集中调整整本手账的颜色、首页、文章布局和装饰，也可以随时备份自己的搭配。', 'cozy-journal' ); ?></p>
+			<p><?php esc_html_e( '感谢使用Cozy Journal。记录日常与灵感，也可以在这里集中调整整本手账的颜色、首页、文章布局和装饰。', 'cozy-journal' ); ?></p>
 			<div class="cj-welcome-actions">
 				<a class="button button-primary cj-primary-button" href="<?php echo esc_url( admin_url( 'admin.php?page=' . $sections['initial']['page'] ) ); ?>"><?php esc_html_e( '开始设置', 'cozy-journal' ); ?></a>
 				<?php if ( function_exists( 'cozy_journal_get_write_url' ) && cozy_journal_writing_desk_enabled() && cozy_journal_current_user_can_create_writing_posts() ) : ?>
@@ -978,7 +978,7 @@ function cozy_journal_render_welcome_panel() {
 		</div>
 		<div class="cj-welcome-art" aria-hidden="true">
 			<div class="cj-admin-tape"></div>
-			<div class="cj-mini-polaroid"><span></span><i></i><b>Cozy day</b></div>
+			<div class="cj-mini-polaroid"><span></span><i></i><b>暖日</b></div>
 			<div class="cj-flower-sticker">✿</div>
 		</div>
 	</div>
@@ -1081,15 +1081,15 @@ function cozy_journal_render_about_panel() {
 	?>
 	<div class="cj-section-heading">
 		<p><?php esc_html_e( 'About the theme', 'cozy-journal' ); ?></p>
-		<h2><?php esc_html_e( '关于 Cozy Journal', 'cozy-journal' ); ?></h2>
-		<span><?php esc_html_e( '一款为日常记录、摄影随笔和温柔生活准备的手账风主题。', 'cozy-journal' ); ?></span>
+		<h2><?php esc_html_e( '关于Cozy Journal', 'cozy-journal' ); ?></h2>
+		<span><?php esc_html_e( '记录日常与灵感，为生活记录、摄影随笔和缓慢时光准备的手账风主题。', 'cozy-journal' ); ?></span>
 	</div>
 
 	<div class="cj-about-card">
 		<div class="cj-about-mark">CJ</div>
 		<div>
 			<h3><?php esc_html_e( '把普通的日子，认真地装订起来。', 'cozy-journal' ); ?></h3>
-			<p><?php esc_html_e( 'Cozy Journal 使用经典 WordPress 模板结构，兼顾文章阅读、移动端体验和可视化设置。所有插画装饰由 CSS 与字符构成，不依赖远程字体或图片。', 'cozy-journal' ); ?></p>
+			<p><?php esc_html_e( 'Cozy Journal使用经典 WordPress 模板结构，兼顾文章阅读、移动端体验和可视化设置。所有插画装饰由 CSS 与字符构成，不依赖远程字体或图片。', 'cozy-journal' ); ?></p>
 		</div>
 	</div>
 
@@ -1131,7 +1131,7 @@ function cozy_journal_render_options_page() {
 				<span class="cj-brand-mark">CJ</span>
 				<div>
 					<h1><?php esc_html_e( 'Cozy Journal 主题设置', 'cozy-journal' ); ?></h1>
-					<p><?php esc_html_e( 'Theme Options · Cozy Journal', 'cozy-journal' ); ?></p>
+					<p><?php esc_html_e( '记录日常与灵感 · GetL-X', 'cozy-journal' ); ?></p>
 				</div>
 				<small>v<?php echo esc_html( COZY_JOURNAL_VERSION ); ?></small>
 			</div>

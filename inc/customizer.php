@@ -107,7 +107,7 @@ function cozy_journal_customize_register( $wp_customize ) {
 	$wp_customize->add_panel(
 		'cozy_journal_theme_options',
 		array(
-			'title'       => __( '手账主题设置', 'cozy-journal' ),
+			'title'       => __( 'Cozy Journal 设置', 'cozy-journal' ),
 			'description' => __( '把站点调成最符合你心情的手账本。', 'cozy-journal' ),
 			'priority'    => 30,
 		)

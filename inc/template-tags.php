@@ -122,4 +122,3 @@ function cozy_journal_pagination() {
 		)
 	);
 }
-
