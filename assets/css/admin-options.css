@@ -129,6 +129,23 @@ body[class*="cozy-journal-settings"] #wpbody-content {
 	font-size: 17px;
 }
 
+.cozy-journal-options-wrap .button .cj-button-check {
+	display: block;
+	width: 1.1em;
+	height: 1.1em;
+	flex: 0 0 auto;
+	overflow: visible;
+}
+
+.cozy-journal-options-wrap .button .cj-button-check path {
+	fill: none;
+	stroke: currentColor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 2;
+	vector-effect: non-scaling-stroke;
+}
+
 .cozy-journal-options-wrap .cj-primary-button,
 .cozy-journal-options-wrap .cj-primary-button:focus {
 	border-color: var(--cj-admin-rose-dark);

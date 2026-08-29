@@ -10,6 +10,44 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Returns the editable product name used inside the settings center.
+ *
+ * @return string
+ */
+function cozy_journal_get_admin_brand_name() {
+	$name = trim( (string) get_theme_mod( 'cozy_journal_admin_brand_name', COZY_JOURNAL_NAME ) );
+
+	return '' !== $name ? $name : COZY_JOURNAL_NAME;
+}
+
+/**
+ * Returns the editable neutral product description used in administration.
+ *
+ * @return string
+ */
+function cozy_journal_get_admin_brand_tagline() {
+	$tagline = trim(
+		(string) get_theme_mod(
+			'cozy_journal_admin_brand_tagline',
+			__( '一个简洁灵活的 WordPress 手账主题', 'cozy-journal' )
+		)
+	);
+
+	return '' !== $tagline ? $tagline : __( '一个简洁灵活的 WordPress 手账主题', 'cozy-journal' );
+}
+
+/**
+ * Returns the settings-center mark without exposing site or user identity.
+ *
+ * @return string
+ */
+function cozy_journal_get_admin_brand_mark() {
+	$mark = trim( (string) get_theme_mod( 'cozy_journal_admin_brand_mark', 'CJ' ) );
+
+	return '' !== $mark ? $mark : 'CJ';
+}
+
+/**
  * Returns an integer theme mod constrained to a safe range.
  *
  * @param string $setting Setting ID.

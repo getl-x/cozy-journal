@@ -4,7 +4,7 @@ Theme URI: https://github.com/getl-x/cozy-journal
 Author: GetL-X
 Author URI: https://github.com/getl-x/cozy-journal
 Description: A cozy journal-style WordPress theme for personal blogs, stories and everyday notes.
-Version: 1.5.0
+Version: 1.6.0
 Requires at least: 6.0
 Requires PHP: 7.4
 License: GNU General Public License v2 or later
@@ -1781,6 +1781,37 @@ input[type="submit"]:hover {
 	text-decoration: none;
 }
 
+.theme-credit {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 0.28em;
+	margin: 10px 0 0;
+	color: var(--journal-muted);
+	font-size: 0.72rem;
+	letter-spacing: 0.02em;
+}
+
+.theme-credit-symbol {
+	color: var(--journal-primary);
+	font-size: 0.95rem;
+	line-height: 1;
+}
+
+.theme-credit a {
+	color: inherit;
+	font-weight: 700;
+	text-decoration: none;
+	text-underline-offset: 0.2em;
+}
+
+.theme-credit a:hover,
+.theme-credit a:focus {
+	color: var(--journal-primary-dark);
+	text-decoration: underline;
+}
+
 .footer-heart {
 	display: inline-block;
 	margin-left: 4px;
@@ -2531,36 +2562,4 @@ body.journal-no-background-shapes::after {
 		background: #fff;
 		box-shadow: none;
 	}
-}
-
-/* Public theme source credit. */
-.theme-credit {
-	display: inline-flex;
-	flex-wrap: wrap;
-	align-items: center;
-	justify-content: center;
-	gap: 0.28em;
-	margin: 10px 0 0;
-	color: var(--journal-muted);
-	font-size: 0.72rem;
-	letter-spacing: 0.02em;
-}
-
-.theme-credit-symbol {
-	color: var(--journal-primary);
-	font-size: 0.95rem;
-	line-height: 1;
-}
-
-.theme-credit a {
-	color: inherit;
-	font-weight: 700;
-	text-decoration: none;
-	text-underline-offset: 0.2em;
-}
-
-.theme-credit a:hover,
-.theme-credit a:focus {
-	color: var(--journal-primary-dark);
-	text-decoration: underline;
 }

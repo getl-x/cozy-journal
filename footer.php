@@ -36,12 +36,17 @@
 				</p>
 			<?php endif; ?>
 
-
-			<p class="theme-credit">
-				<span class="theme-credit-symbol" aria-hidden="true">✿</span>
-				<span><?php esc_html_e( 'Theme Cozy Journal by', 'cozy-journal' ); ?></span>
-				<a href="<?php echo esc_url( COZY_JOURNAL_REPOSITORY_URL ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( COZY_JOURNAL_AUTHOR ); ?></a>
-			</p>
+			<?php if ( get_theme_mod( 'cozy_journal_show_theme_credit', true ) ) : ?>
+				<?php
+				$cozy_journal_credit_symbol = trim( (string) get_theme_mod( 'cozy_journal_theme_credit_symbol', '✿' ) );
+				$cozy_journal_credit_prefix = trim( (string) get_theme_mod( 'cozy_journal_theme_credit_prefix', __( 'Theme Cozy Journal by', 'cozy-journal' ) ) );
+				?>
+				<p class="theme-credit">
+					<?php if ( '' !== $cozy_journal_credit_symbol ) : ?><span class="theme-credit-symbol" aria-hidden="true"><?php echo esc_html( $cozy_journal_credit_symbol ); ?></span><?php endif; ?>
+					<?php if ( '' !== $cozy_journal_credit_prefix ) : ?><span><?php echo esc_html( $cozy_journal_credit_prefix ); ?></span><?php endif; ?>
+					<a href="<?php echo esc_url( COZY_JOURNAL_REPOSITORY_URL ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( COZY_JOURNAL_AUTHOR ); ?></a>
+				</p>
+			<?php endif; ?>
 		</div>
 	</footer>
 	<?php endif; ?>

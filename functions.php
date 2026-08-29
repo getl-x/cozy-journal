@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'COZY_JOURNAL_VERSION' ) ) {
-	define( 'COZY_JOURNAL_VERSION', '1.5.0' );
+	define( 'COZY_JOURNAL_VERSION', '1.6.0' );
 }
 
 if ( ! defined( 'COZY_JOURNAL_NAME' ) ) {
@@ -136,6 +136,25 @@ function cozy_journal_scripts() {
 	wp_add_inline_style( 'cozy-journal-style', cozy_journal_custom_properties() );
 }
 add_action( 'wp_enqueue_scripts', 'cozy_journal_scripts' );
+
+/**
+ * Removes comment-author website links on the public site unless enabled.
+ *
+ * @param string $link       Rendered author link.
+ * @param string $author     Comment author name.
+ * @param int    $comment_id Comment ID.
+ * @return string
+ */
+function cozy_journal_comment_author_link( $link, $author, $comment_id ) {
+	if ( is_admin() || get_theme_mod( 'cozy_journal_link_comment_author_website', false ) ) {
+		return $link;
+	}
+
+	$comment = get_comment( $comment_id );
+
+	return esc_html( $comment ? get_comment_author( $comment ) : $author );
+}
+add_filter( 'get_comment_author_link', 'cozy_journal_comment_author_link', 10, 3 );
 
 /**
  * Returns a sanitized theme color, falling back to the default.
@@ -344,7 +363,6 @@ function cozy_journal_get_stickers() {
 require get_template_directory() . '/inc/theme-options-extra.php';
 require get_template_directory() . '/inc/theme-option-helpers.php';
 require get_template_directory() . '/inc/template-tags.php';
-require get_template_directory() . '/inc/privacy.php';
 require get_template_directory() . '/inc/theme-options.php';
 require get_template_directory() . '/inc/frontend-editor.php';
 require get_template_directory() . '/inc/customizer.php';

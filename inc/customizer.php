@@ -124,8 +124,8 @@ function cozy_journal_customize_register( $wp_customize ) {
 	$wp_customize->add_panel(
 		'cozy_journal_theme_options',
 		array(
-			'title'       => __( 'Cozy Journal 设置', 'cozy-journal' ),
-			'description' => __( '把站点调成最符合你心情的手账本。', 'cozy-journal' ),
+			'title'       => sprintf( __( '%s 设置', 'cozy-journal' ), cozy_journal_get_admin_brand_name() ),
+			'description' => cozy_journal_get_admin_brand_tagline(),
 			'priority'    => 30,
 		)
 	);
@@ -655,6 +655,7 @@ function cozy_journal_customize_register( $wp_customize ) {
 	/* Register every newer settings-center field that is not already present above. */
 	$schema_sections = cozy_journal_get_theme_option_sections();
 	$section_map     = array(
+		'branding'       => 'cozy_journal_branding_section',
 		'initial'        => 'cozy_journal_initial_section',
 		'writing'        => 'cozy_journal_writing_section',
 		'global'         => 'cozy_journal_style_section',

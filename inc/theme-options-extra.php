@@ -32,6 +32,22 @@ function cozy_journal_expand_theme_option_sections( $sections ) {
 		);
 	};
 
+	$branding_section = array(
+		'page'        => 'cozy-journal-settings-branding',
+		'title'       => __( '品牌与来源', 'cozy-journal' ),
+		'eyebrow'     => __( 'Branding & Credit', 'cozy-journal' ),
+		'description' => __( '使用中性默认品牌，并按需要修改设置中心名称、说明和页尾来源展示。', 'cozy-journal' ),
+		'icon'        => 'dashicons-admin-site-alt3',
+		'fields'      => array(
+			'cozy_journal_admin_brand_name' => $field( __( '设置中心显示名称', 'cozy-journal' ), __( '只影响主题设置中心和自定义器标题，不会修改 WordPress 站点标题。', 'cozy-journal' ), 'text', 'Cozy Journal', __( '设置中心品牌', 'cozy-journal' ) ),
+			'cozy_journal_admin_brand_tagline' => $field( __( '设置中心说明', 'cozy-journal' ), __( '用于后台欢迎页、设置页页头和关于主题页面。', 'cozy-journal' ), 'text', __( '一个简洁灵活的 WordPress 手账主题', 'cozy-journal' ), __( '设置中心品牌', 'cozy-journal' ) ),
+			'cozy_journal_admin_brand_mark' => $field( __( '设置中心标记', 'cozy-journal' ), __( '建议使用 1 至 3 个字符，例如 CJ、✿ 或一个汉字。', 'cozy-journal' ), 'text', 'CJ', __( '设置中心品牌', 'cozy-journal' ) ),
+			'cozy_journal_show_theme_credit' => $field( __( '显示页尾主题来源', 'cozy-journal' ), __( '默认显示主题来源，关闭后不会影响版权行或页脚菜单。', 'cozy-journal' ), 'checkbox', true, __( '页尾来源', 'cozy-journal' ) ),
+			'cozy_journal_theme_credit_symbol' => $field( __( '来源装饰符号', 'cozy-journal' ), __( '使用字符或 Emoji，不加载外部图片。', 'cozy-journal' ), 'text', '✿', __( '页尾来源', 'cozy-journal' ) ),
+			'cozy_journal_theme_credit_prefix' => $field( __( '来源前缀文字', 'cozy-journal' ), __( '作者名称 GetL-X 和仓库链接保持固定。', 'cozy-journal' ), 'text', 'Theme Cozy Journal by', __( '页尾来源', 'cozy-journal' ) ),
+		),
+	);
+
 	$sections['writing']['fields'] = array_merge(
 		$sections['writing']['fields'],
 		array(
@@ -206,6 +222,9 @@ function cozy_journal_expand_theme_option_sections( $sections ) {
 			'cozy_journal_show_footer_year' => $footer_year_field,
 			'cozy_journal_copyright_text' => $field( __( '自定义版权文字', 'cozy-journal' ), __( '留空使用默认格式；支持 {year} 和 {site}。', 'cozy-journal' ), 'text', '', __( '版权与样式', 'cozy-journal' ) ),
 			'cozy_journal_show_footer_heart' => $field( __( '显示版权行爱心', 'cozy-journal' ), __( '控制版权信息末尾的小爱心。', 'cozy-journal' ), 'checkbox', true, __( '版权与样式', 'cozy-journal' ) ),
+			'cozy_journal_show_theme_credit' => $branding_section['fields']['cozy_journal_show_theme_credit'],
+			'cozy_journal_theme_credit_symbol' => $branding_section['fields']['cozy_journal_theme_credit_symbol'],
+			'cozy_journal_theme_credit_prefix' => $branding_section['fields']['cozy_journal_theme_credit_prefix'],
 			'cozy_journal_footer_alignment' => $field( __( '页脚内容对齐', 'cozy-journal' ), __( '控制寄语、菜单和版权方向。', 'cozy-journal' ), 'select', 'center', __( '版权与样式', 'cozy-journal' ), array( 'choices' => array( 'left' => __( '左对齐', 'cozy-journal' ), 'center' => __( '居中', 'cozy-journal' ) ) ) ),
 			'cozy_journal_footer_paper_lines' => $field( __( '页脚显示横线纸纹', 'cozy-journal' ), __( '关闭后页脚使用纯色纸张。', 'cozy-journal' ), 'checkbox', true, __( '版权与样式', 'cozy-journal' ) ),
 		),
@@ -258,7 +277,14 @@ function cozy_journal_expand_theme_option_sections( $sections ) {
 	$sections['content']['description']     = __( '控制文章列表、归档标题、卡片内容、缩略图比例、摘要和分页。', 'cozy-journal' );
 	$sections['decorations']['description'] = __( '调整纸胶带、贴纸、纸张纹理、卡片倾斜和悬停动态。', 'cozy-journal' );
 
+	unset(
+		$branding_section['fields']['cozy_journal_show_theme_credit'],
+		$branding_section['fields']['cozy_journal_theme_credit_symbol'],
+		$branding_section['fields']['cozy_journal_theme_credit_prefix']
+	);
+
 	return array(
+		'branding'       => $branding_section,
 		'initial'        => $sections['initial'],
 		'writing'        => $sections['writing'],
 		'global'         => $sections['global'],

@@ -31,8 +31,8 @@ if ( post_password_required() ) {
 			<?php
 			wp_list_comments(
 				array(
-					'style'      => 'ol',
-					'short_ping' => true,
+					'style'       => 'ol',
+					'short_ping'  => true,
 					'avatar_size' => get_theme_mod( 'cozy_journal_show_comment_avatars', false ) ? 56 : 0,
 				)
 			);
