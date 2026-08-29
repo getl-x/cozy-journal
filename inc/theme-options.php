@@ -10,6 +10,34 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Returns the name used to greet the current site owner in the settings center.
+ *
+ * A saved site-wide name takes priority. When it is left empty, the current
+ * WordPress user's public display name keeps the welcome screen personal
+ * without treating the theme author as the site owner.
+ *
+ * @return string
+ */
+function cozy_journal_get_journal_owner_name() {
+	$owner_name = trim( (string) get_theme_mod( 'cozy_journal_owner_name', '' ) );
+	if ( '' !== $owner_name ) {
+		return $owner_name;
+	}
+
+	$current_user = wp_get_current_user();
+	if ( $current_user->exists() ) {
+		$display_name = trim( (string) $current_user->display_name );
+		if ( '' !== $display_name ) {
+			return $display_name;
+		}
+	}
+
+	$site_name = trim( (string) get_bloginfo( 'name' ) );
+
+	return '' !== $site_name ? $site_name : __( '站点主理人', 'cozy-journal' );
+}
+
+/**
  * Returns the editable option sections and their fields.
  *
  * The dedicated options center and the Customizer both store values as
@@ -23,9 +51,30 @@ function cozy_journal_get_theme_option_sections() {
 			'page'        => 'cozy-journal-settings-initial',
 			'title'       => __( '初始设置', 'cozy-journal' ),
 			'eyebrow'     => __( 'Quick start', 'cozy-journal' ),
-			'description' => __( '控制首页的基础显示方式和文章数量。', 'cozy-journal' ),
+			'description' => __( '设置站点主理人称呼，以及首页的基础显示方式和文章数量。', 'cozy-journal' ),
 			'icon'        => 'dashicons-admin-settings',
 			'fields'      => array(
+				'cozy_journal_owner_name' => array(
+					'label'       => __( '站点主理人名称', 'cozy-journal' ),
+					'description' => __( '用于主题设置首页的欢迎语，不会修改任何“主题作者”署名。留空时使用当前登录用户的 WordPress 公开显示名称。', 'cozy-journal' ),
+					'type'        => 'text',
+					'default'     => '',
+					'group'       => __( '设置中心称呼', 'cozy-journal' ),
+				),
+				'cozy_journal_owner_greeting' => array(
+					'label'       => __( '欢迎问候语', 'cozy-journal' ),
+					'description' => __( '显示在站点主理人名称后面，例如“你好！”或“欢迎回来”。留空时只显示名称。', 'cozy-journal' ),
+					'type'        => 'text',
+					'default'     => __( '你好！', 'cozy-journal' ),
+					'group'       => __( '设置中心称呼', 'cozy-journal' ),
+				),
+				'cozy_journal_owner_welcome_message' => array(
+					'label'       => __( '欢迎说明文字', 'cozy-journal' ),
+					'description' => __( '显示在主题设置首页问候语下方，可以写给站点使用者的一段提示。', 'cozy-journal' ),
+					'type'        => 'textarea',
+					'default'     => __( '感谢使用Cozy Journal。记录日常与灵感，也可以在这里集中调整整本手账的颜色、首页、文章布局和装饰。', 'cozy-journal' ),
+					'group'       => __( '设置中心称呼', 'cozy-journal' ),
+				),
 				'cozy_journal_show_hero' => array(
 					'label'       => __( '显示首页欢迎卡', 'cozy-journal' ),
 					'description' => __( '关闭后，首页会直接从最新文章区域开始。', 'cozy-journal' ),
@@ -961,13 +1010,33 @@ function cozy_journal_render_editable_section( $section_key, $section ) {
  * Renders the welcome dashboard.
  */
 function cozy_journal_render_welcome_panel() {
-	$sections = cozy_journal_get_theme_option_sections();
+	$sections        = cozy_journal_get_theme_option_sections();
+	$owner_name      = cozy_journal_get_journal_owner_name();
+	$owner_greeting  = trim( (string) get_theme_mod( 'cozy_journal_owner_greeting', __( '你好！', 'cozy-journal' ) ) );
+	$welcome_message = trim(
+		(string) get_theme_mod(
+			'cozy_journal_owner_welcome_message',
+			__( '感谢使用Cozy Journal。记录日常与灵感，也可以在这里集中调整整本手账的颜色、首页、文章布局和装饰。', 'cozy-journal' )
+		)
+	);
+	$welcome_title   = $owner_name;
+
+	if ( '' !== $owner_greeting ) {
+		$welcome_title = sprintf(
+			/* translators: 1: site owner name, 2: greeting. */
+			__( '%1$s，%2$s', 'cozy-journal' ),
+			$owner_name,
+			$owner_greeting
+		);
+	}
 	?>
 	<div class="cj-welcome-hero">
 		<div class="cj-welcome-copy">
 			<span class="cj-kicker"><?php esc_html_e( '欢迎来到 Cozy Journal', 'cozy-journal' ); ?></span>
-			<h2><?php esc_html_e( '你好！', 'cozy-journal' ); ?></h2>
-			<p><?php esc_html_e( '感谢使用Cozy Journal。记录日常与灵感，也可以在这里集中调整整本手账的颜色、首页、文章布局和装饰。', 'cozy-journal' ); ?></p>
+			<h2><?php echo esc_html( $welcome_title ); ?></h2>
+			<?php if ( '' !== $welcome_message ) : ?>
+				<p><?php echo esc_html( $welcome_message ); ?></p>
+			<?php endif; ?>
 			<div class="cj-welcome-actions">
 				<a class="button button-primary cj-primary-button" href="<?php echo esc_url( admin_url( 'admin.php?page=' . $sections['initial']['page'] ) ); ?>"><?php esc_html_e( '开始设置', 'cozy-journal' ); ?></a>
 				<?php if ( function_exists( 'cozy_journal_get_write_url' ) && cozy_journal_writing_desk_enabled() && cozy_journal_current_user_can_create_writing_posts() ) : ?>
