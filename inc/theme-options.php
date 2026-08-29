@@ -46,7 +46,7 @@ function cozy_journal_get_journal_owner_name() {
  * @return array<string, array<string, mixed>>
  */
 function cozy_journal_get_theme_option_sections() {
-	return array(
+	$sections = array(
 		'initial' => array(
 			'page'        => 'cozy-journal-settings-initial',
 			'title'       => __( '初始设置', 'cozy-journal' ),
@@ -372,74 +372,9 @@ function cozy_journal_get_theme_option_sections() {
 				),
 			),
 		),
-		'privacy' => array(
-			'page'        => 'cozy-journal-settings-privacy',
-			'title'       => __( '隐私显示', 'cozy-journal' ),
-			'eyebrow'     => __( 'Privacy', 'cozy-journal' ),
-			'description' => __( '控制主题是否公开显示 WordPress 用户名称、头像和作者网址。', 'cozy-journal' ),
-			'icon'        => 'dashicons-privacy',
-			'fields'      => array(
-				'cozy_journal_show_card_author' => array(
-					'label'       => __( '文章卡片显示作者', 'cozy-journal' ),
-					'description' => __( '新安装默认关闭；多作者站点可以开启。', 'cozy-journal' ),
-					'type'        => 'checkbox',
-					'default'     => false,
-					'group'       => __( '文章作者', 'cozy-journal' ),
-				),
-				'cozy_journal_show_single_author' => array(
-					'label'       => __( '文章页显示作者', 'cozy-journal' ),
-					'description' => __( '新安装默认关闭；多作者站点可以开启。', 'cozy-journal' ),
-					'type'        => 'checkbox',
-					'default'     => false,
-					'group'       => __( '文章作者', 'cozy-journal' ),
-				),
-				'cozy_journal_link_author_archive' => array(
-					'label'       => __( '作者名称链接到作者归档', 'cozy-journal' ),
-					'description' => __( '默认关闭，避免自动生成可能包含账户特征的作者归档网址。', 'cozy-journal' ),
-					'type'        => 'checkbox',
-					'default'     => false,
-					'group'       => __( '文章作者', 'cozy-journal' ),
-				),
-				'cozy_journal_show_comment_avatars' => array(
-					'label'       => __( '显示评论者头像', 'cozy-journal' ),
-					'description' => __( '默认关闭，避免页面和截图带出头像或触发头像服务请求。', 'cozy-journal' ),
-					'type'        => 'checkbox',
-					'default'     => false,
-					'group'       => __( '评论身份', 'cozy-journal' ),
-				),
-				'cozy_journal_link_comment_author_website' => array(
-					'label'       => __( '评论者名称链接到个人网站', 'cozy-journal' ),
-					'description' => __( '默认关闭，评论者名称仍会显示，但不会链接其填写的网址。', 'cozy-journal' ),
-					'type'        => 'checkbox',
-					'default'     => false,
-					'group'       => __( '评论身份', 'cozy-journal' ),
-				),
-
-				'cozy_journal_writing_show_user_name' => array(
-					'label'       => __( '写作台显示当前用户名称', 'cozy-journal' ),
-					'description' => __( '默认关闭；开启后显示当前登录用户的 WordPress 公开显示名称。', 'cozy-journal' ),
-					'type'        => 'checkbox',
-					'default'     => false,
-					'group'       => __( '前台写作身份', 'cozy-journal' ),
-				),
-				'cozy_journal_writing_show_user_avatar' => array(
-					'label'       => __( '写作台显示当前用户头像', 'cozy-journal' ),
-					'description' => __( '默认关闭，避免截图带出头像或触发头像服务请求。', 'cozy-journal' ),
-					'type'        => 'checkbox',
-					'default'     => false,
-					'group'       => __( '前台写作身份', 'cozy-journal' ),
-				),
-				'cozy_journal_writing_show_lock_user_name' => array(
-					'label'       => __( '编辑锁显示协作者名称', 'cozy-journal' ),
-					'description' => __( '默认关闭，统一使用“另一位用户”作为冲突提示。', 'cozy-journal' ),
-					'type'        => 'checkbox',
-					'default'     => false,
-					'group'       => __( '前台写作身份', 'cozy-journal' ),
-				),
-			),
-		),
-
 	);
+
+	return cozy_journal_expand_theme_option_sections( $sections );
 }
 
 /**
@@ -1067,6 +1002,7 @@ function cozy_journal_render_welcome_panel() {
 		<h3><?php esc_html_e( '主题状态', 'cozy-journal' ); ?></h3>
 		<div class="cj-status-grid">
 			<div><span><?php esc_html_e( '主题版本', 'cozy-journal' ); ?></span><strong><?php echo esc_html( COZY_JOURNAL_VERSION ); ?></strong></div>
+			<div><span><?php esc_html_e( '可配置项', 'cozy-journal' ); ?></span><strong><?php echo esc_html( count( cozy_journal_get_all_option_fields() ) ); ?></strong></div>
 			<div><span><?php esc_html_e( '主题作者', 'cozy-journal' ); ?></span><strong><a href="<?php echo esc_url( COZY_JOURNAL_REPOSITORY_URL ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( COZY_JOURNAL_AUTHOR ); ?></a></strong></div>
 			<div><span><?php esc_html_e( 'WordPress', 'cozy-journal' ); ?></span><strong><?php echo esc_html( get_bloginfo( 'version' ) ); ?></strong></div>
 			<div><span><?php esc_html_e( 'PHP', 'cozy-journal' ); ?></span><strong><?php echo esc_html( PHP_VERSION ); ?></strong></div>

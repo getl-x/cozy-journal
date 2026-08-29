@@ -15,14 +15,16 @@ get_header();
 			the_post();
 			get_template_part( 'template-parts/content', 'single' );
 
-			the_post_navigation(
-				array(
-					'prev_text' => '<span class="nav-subtitle">' . esc_html__( '← 前一页手账', 'cozy-journal' ) . '</span><span class="nav-title">%title</span>',
-					'next_text' => '<span class="nav-subtitle">' . esc_html__( '后一页手账 →', 'cozy-journal' ) . '</span><span class="nav-title">%title</span>',
-				)
-			);
+			if ( get_theme_mod( 'cozy_journal_show_post_navigation', true ) ) {
+				the_post_navigation(
+					array(
+						'prev_text' => '<span class="nav-subtitle">' . esc_html( get_theme_mod( 'cozy_journal_post_nav_previous', __( '← 前一页手账', 'cozy-journal' ) ) ) . '</span><span class="nav-title">%title</span>',
+						'next_text' => '<span class="nav-subtitle">' . esc_html( get_theme_mod( 'cozy_journal_post_nav_next', __( '后一页手账 →', 'cozy-journal' ) ) ) . '</span><span class="nav-title">%title</span>',
+					)
+				);
+			}
 
-			if ( comments_open() || get_comments_number() ) {
+			if ( get_theme_mod( 'cozy_journal_show_comments_on_posts', true ) && ( comments_open() || get_comments_number() ) ) {
 				comments_template();
 			}
 		endwhile;
@@ -34,4 +36,3 @@ get_header();
 
 <?php
 get_footer();
-

@@ -64,26 +64,32 @@ if ( ! function_exists( 'cozy_journal_entry_footer' ) ) {
 	 */
 	function cozy_journal_entry_footer() {
 		if ( 'post' === get_post_type() ) {
-			$categories = get_the_category_list( esc_html__( '、', 'cozy-journal' ) );
-			if ( $categories ) {
-				printf( '<span class="cat-links"><strong>%1$s</strong> %2$s</span>', esc_html__( '收进：', 'cozy-journal' ), wp_kses_post( $categories ) );
+			if ( get_theme_mod( 'cozy_journal_show_entry_categories', true ) ) {
+				$categories = get_the_category_list( esc_html__( '、', 'cozy-journal' ) );
+				if ( $categories ) {
+					printf( '<span class="cat-links"><strong>%1$s</strong> %2$s</span>', esc_html__( '收进：', 'cozy-journal' ), wp_kses_post( $categories ) );
+				}
 			}
 
-			$tags = get_the_tag_list( '', ' ' );
-			if ( $tags ) {
-				printf( '<span class="tags-links"><strong>%1$s</strong> %2$s</span>', esc_html__( '贴纸：', 'cozy-journal' ), wp_kses_post( $tags ) );
+			if ( get_theme_mod( 'cozy_journal_show_entry_tags', true ) ) {
+				$tags = get_the_tag_list( '', ' ' );
+				if ( $tags ) {
+					printf( '<span class="tags-links"><strong>%1$s</strong> %2$s</span>', esc_html__( '贴纸：', 'cozy-journal' ), wp_kses_post( $tags ) );
+				}
 			}
 		}
 
-		edit_post_link(
-			sprintf(
-				/* translators: %s: Post title. */
-				wp_kses( __( '编辑 <span class="screen-reader-text">“%s”</span>', 'cozy-journal' ), array( 'span' => array( 'class' => array() ) ) ),
-				wp_kses_post( get_the_title() )
-			),
-			'<span class="edit-link">',
-			'</span>'
-		);
+		if ( get_theme_mod( 'cozy_journal_show_edit_link', true ) ) {
+			edit_post_link(
+				sprintf(
+					/* translators: %s: Post title. */
+					wp_kses( __( '编辑 <span class="screen-reader-text">“%s”</span>', 'cozy-journal' ), array( 'span' => array( 'class' => array() ) ) ),
+					wp_kses_post( get_the_title() )
+				),
+				'<span class="edit-link">',
+				'</span>'
+			);
+		}
 	}
 }
 
@@ -117,8 +123,8 @@ function cozy_journal_pagination() {
 	the_posts_pagination(
 		array(
 			'mid_size'  => 1,
-			'prev_text' => __( '← 新一点', 'cozy-journal' ),
-			'next_text' => __( '旧一点 →', 'cozy-journal' ),
+			'prev_text' => get_theme_mod( 'cozy_journal_pagination_previous', __( '← 新一点', 'cozy-journal' ) ),
+			'next_text' => get_theme_mod( 'cozy_journal_pagination_next', __( '旧一点 →', 'cozy-journal' ) ),
 		)
 	);
 }

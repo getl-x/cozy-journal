@@ -10,11 +10,15 @@ get_header();
 
 <main id="primary" class="site-main journal-container content-with-sidebar">
 	<div class="content-column">
-		<header class="archive-paper journal-paper">
-			<p class="section-kicker"><?php esc_html_e( 'Collected notes', 'cozy-journal' ); ?></p>
-			<?php the_archive_title( '<h1 class="archive-title">', '</h1>' ); ?>
-			<?php the_archive_description( '<div class="archive-description">', '</div>' ); ?>
-		</header>
+		<?php if ( get_theme_mod( 'cozy_journal_show_archive_header', true ) ) : ?>
+			<header class="archive-paper journal-paper">
+				<p class="section-kicker"><?php esc_html_e( 'Collected notes', 'cozy-journal' ); ?></p>
+				<?php the_archive_title( '<h1 class="archive-title">', '</h1>' ); ?>
+				<?php the_archive_description( '<div class="archive-description">', '</div>' ); ?>
+			</header>
+		<?php else : ?>
+			<?php the_archive_title( '<h1 class="screen-reader-text">', '</h1>' ); ?>
+		<?php endif; ?>
 
 		<div class="post-card-grid">
 			<?php if ( have_posts() ) : ?>
@@ -35,4 +39,3 @@ get_header();
 
 <?php
 get_footer();
-

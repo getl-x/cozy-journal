@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'COZY_JOURNAL_VERSION' ) ) {
-	define( 'COZY_JOURNAL_VERSION', '1.4.0' );
+	define( 'COZY_JOURNAL_VERSION', '1.5.0' );
 }
 
 if ( ! defined( 'COZY_JOURNAL_NAME' ) ) {
@@ -124,7 +124,7 @@ function cozy_journal_scripts() {
 		'cozy-journal-navigation',
 		'cozyJournalScreenReaderText',
 		array(
-			'expand'   => __( '展开菜单', 'cozy-journal' ),
+			'expand'   => get_theme_mod( 'cozy_journal_mobile_menu_text', __( '展开菜单', 'cozy-journal' ) ),
 			'collapse' => __( '收起菜单', 'cozy-journal' ),
 		)
 	);
@@ -156,13 +156,21 @@ function cozy_journal_get_color( $setting, $default ) {
  * @return string
  */
 function cozy_journal_custom_properties() {
-	$primary   = cozy_journal_get_color( 'cozy_journal_primary_color', '#d8757f' );
-	$secondary = cozy_journal_get_color( 'cozy_journal_secondary_color', '#d9a441' );
-	$paper     = cozy_journal_get_color( 'cozy_journal_paper_color', '#f7efe2' );
-	$card      = cozy_journal_get_color( 'cozy_journal_card_color', '#fffdf8' );
-	$ink       = cozy_journal_get_color( 'cozy_journal_ink_color', '#4f413b' );
-	$radius    = absint( get_theme_mod( 'cozy_journal_card_radius', 18 ) );
-	$radius    = min( 36, max( 4, $radius ) );
+	$primary       = cozy_journal_get_color( 'cozy_journal_primary_color', '#d8757f' );
+	$secondary     = cozy_journal_get_color( 'cozy_journal_secondary_color', '#d9a441' );
+	$paper         = cozy_journal_get_color( 'cozy_journal_paper_color', '#f7efe2' );
+	$card          = cozy_journal_get_color( 'cozy_journal_card_color', '#fffdf8' );
+	$ink           = cozy_journal_get_color( 'cozy_journal_ink_color', '#4f413b' );
+	$muted         = cozy_journal_get_color( 'cozy_journal_muted_color', '#89756b' );
+	$radius        = cozy_journal_get_range_mod( 'cozy_journal_card_radius', 18, 4, 36 );
+	$font_size     = cozy_journal_get_range_mod( 'cozy_journal_body_font_size', 16, 14, 20 );
+	$line_height   = cozy_journal_get_range_mod( 'cozy_journal_body_line_height', 180, 150, 220 ) / 100;
+	$site_width    = cozy_journal_get_range_mod( 'cozy_journal_site_width', 1180, 960, 1440 );
+	$content_width = cozy_journal_get_range_mod( 'cozy_journal_content_width', 760, 620, 920 );
+	$page_spacing  = cozy_journal_get_range_mod( 'cozy_journal_page_spacing', 38, 16, 80 );
+	$image_radius  = cozy_journal_get_range_mod( 'cozy_journal_image_radius', 7, 0, 24 );
+	$sidebar_width = cozy_journal_get_range_mod( 'cozy_journal_sidebar_width', 300, 240, 380 );
+	$tape_opacity  = cozy_journal_get_range_mod( 'cozy_journal_tape_opacity', 100, 20, 100 ) / 100;
 
 	$heading_fonts = array(
 		'handwritten' => '"STKaiti", "KaiTi", "FangSong", "Comic Sans MS", cursive',
@@ -179,18 +187,51 @@ function cozy_journal_custom_properties() {
 	$body_choice    = get_theme_mod( 'cozy_journal_body_font', 'system' );
 	$heading_font   = isset( $heading_fonts[ $heading_choice ] ) ? $heading_fonts[ $heading_choice ] : $heading_fonts['handwritten'];
 	$body_font      = isset( $body_fonts[ $body_choice ] ) ? $body_fonts[ $body_choice ] : $body_fonts['system'];
+	$button_radii   = array(
+		'soft'    => '7px',
+		'rounded' => '14px',
+		'pill'    => '999px',
+	);
+	$button_shape   = cozy_journal_get_choice_mod( 'cozy_journal_button_shape', 'pill', array_keys( $button_radii ) );
+	$shadow_sets    = array(
+		'none'   => array( 'none', 'none' ),
+		'soft'   => array( '0 16px 40px rgba(82,61,46,.12)', '0 8px 20px rgba(82,61,46,.10)' ),
+		'medium' => array( '0 18px 46px rgba(82,61,46,.18)', '0 9px 24px rgba(82,61,46,.15)' ),
+		'strong' => array( '0 22px 56px rgba(82,61,46,.25)', '0 12px 30px rgba(82,61,46,.20)' ),
+	);
+	$shadow_style   = cozy_journal_get_choice_mod( 'cozy_journal_shadow_style', 'soft', array_keys( $shadow_sets ) );
+	$border_style   = cozy_journal_get_choice_mod( 'cozy_journal_card_border_style', 'solid', array( 'solid', 'dashed', 'none' ) );
 
-	return sprintf(
-		':root{--journal-primary:%1$s;--journal-primary-dark:%1$s;--journal-secondary:%2$s;--journal-paper:%3$s;--journal-card:%4$s;--journal-ink:%5$s;--journal-radius:%6$dpx;--journal-heading-font:%7$s;--journal-body-font:%8$s;}',
+	$css = sprintf(
+		':root{--journal-primary:%1$s;--journal-primary-dark:%1$s;--journal-secondary:%2$s;--journal-paper:%3$s;--journal-card:%4$s;--journal-ink:%5$s;--journal-muted:%6$s;--journal-radius:%7$dpx;--journal-heading-font:%8$s;--journal-body-font:%9$s;--journal-font-size:%10$dpx;--journal-line-height:%11$.2F;--journal-site-width:%12$dpx;--journal-content-width:%13$dpx;--journal-page-spacing:%14$dpx;--journal-image-radius:%15$dpx;--journal-sidebar-width:%16$dpx;--journal-tape-opacity:%17$.2F;--journal-button-radius:%18$s;--journal-shadow:%19$s;--journal-shadow-small:%20$s;--journal-card-border-style:%21$s;}',
 		esc_attr( $primary ),
 		esc_attr( $secondary ),
 		esc_attr( $paper ),
 		esc_attr( $card ),
 		esc_attr( $ink ),
+		esc_attr( $muted ),
 		$radius,
 		$heading_font,
-		$body_font
+		$body_font,
+		$font_size,
+		$line_height,
+		$site_width,
+		$content_width,
+		$page_spacing,
+		$image_radius,
+		$sidebar_width,
+		$tape_opacity,
+		$button_radii[ $button_shape ],
+		$shadow_sets[ $shadow_style ][0],
+		$shadow_sets[ $shadow_style ][1],
+		$border_style
 	);
+
+	if ( ! get_theme_mod( 'cozy_journal_smooth_scroll', true ) ) {
+		$css .= 'html{scroll-behavior:auto;}';
+	}
+
+	return $css;
 }
 
 /**
@@ -200,9 +241,20 @@ function cozy_journal_custom_properties() {
  * @return string[]
  */
 function cozy_journal_body_classes( $classes ) {
-	$classes[] = 'journal-layout-' . sanitize_html_class( get_theme_mod( 'cozy_journal_archive_layout', 'grid' ) );
+	$classes[] = 'journal-layout-' . cozy_journal_get_choice_mod( 'cozy_journal_archive_layout', 'grid', array( 'grid', 'list' ) );
+	$classes[] = 'journal-home-columns-' . cozy_journal_get_choice_mod( 'cozy_journal_home_columns', '2', array( '1', '2', '3' ) );
+	$classes[] = 'journal-archive-columns-' . cozy_journal_get_choice_mod( 'cozy_journal_archive_columns', '2', array( '1', '2', '3' ) );
+	$classes[] = 'journal-sidebar-' . cozy_journal_get_choice_mod( 'cozy_journal_sidebar_position', 'right', array( 'left', 'right' ) );
+	$classes[] = 'journal-hero-layout-' . cozy_journal_get_choice_mod( 'cozy_journal_hero_layout', 'split', array( 'split', 'centered', 'text-only' ) );
+	$classes[] = 'journal-header-layout-' . cozy_journal_get_choice_mod( 'cozy_journal_header_layout', 'horizontal', array( 'horizontal', 'centered' ) );
+	$classes[] = 'journal-header-density-' . cozy_journal_get_choice_mod( 'cozy_journal_header_density', 'comfortable', array( 'compact', 'comfortable' ) );
+	$classes[] = 'journal-thumbnail-ratio-' . cozy_journal_get_choice_mod( 'cozy_journal_thumbnail_ratio', 'landscape', array( 'wide', 'landscape', 'square', 'portrait' ) );
+	$classes[] = 'journal-single-title-' . cozy_journal_get_choice_mod( 'cozy_journal_single_title_alignment', 'center', array( 'left', 'center' ) );
+	$classes[] = 'journal-single-image-' . cozy_journal_get_choice_mod( 'cozy_journal_single_image_style', 'polaroid', array( 'polaroid', 'plain' ) );
+	$classes[] = 'journal-footer-align-' . cozy_journal_get_choice_mod( 'cozy_journal_footer_alignment', 'center', array( 'left', 'center' ) );
+	$classes[] = 'journal-link-style-' . cozy_journal_get_choice_mod( 'cozy_journal_link_style', 'underline', array( 'underline', 'hover' ) );
 
-	if ( get_theme_mod( 'cozy_journal_show_sidebar', true ) && is_active_sidebar( 'sidebar-1' ) ) {
+	if ( cozy_journal_should_show_sidebar() ) {
 		$classes[] = 'journal-has-sidebar';
 	} else {
 		$classes[] = 'journal-no-sidebar';
@@ -210,6 +262,33 @@ function cozy_journal_body_classes( $classes ) {
 
 	if ( get_theme_mod( 'cozy_journal_show_tape', true ) ) {
 		$classes[] = 'journal-has-tape';
+	}
+	if ( get_theme_mod( 'cozy_journal_enable_card_tilt', true ) ) {
+		$classes[] = 'journal-card-tilt';
+	}
+	if ( ! get_theme_mod( 'cozy_journal_enable_hover_motion', true ) ) {
+		$classes[] = 'journal-no-hover-motion';
+	}
+	if ( ! get_theme_mod( 'cozy_journal_show_background_pattern', true ) ) {
+		$classes[] = 'journal-no-background-pattern';
+	}
+	if ( ! get_theme_mod( 'cozy_journal_show_background_shapes', true ) ) {
+		$classes[] = 'journal-no-background-shapes';
+	}
+	if ( ! get_theme_mod( 'cozy_journal_show_paper_lines', true ) ) {
+		$classes[] = 'journal-no-paper-lines';
+	}
+	if ( ! get_theme_mod( 'cozy_journal_footer_paper_lines', true ) ) {
+		$classes[] = 'journal-no-footer-lines';
+	}
+	if ( get_theme_mod( 'cozy_journal_show_sticky_marker', true ) ) {
+		$classes[] = 'journal-sticky-marker';
+	}
+	if ( get_theme_mod( 'cozy_journal_sticky_header', false ) ) {
+		$classes[] = 'journal-sticky-header';
+	}
+	if ( ! get_theme_mod( 'cozy_journal_show_hero_art', true ) ) {
+		$classes[] = 'journal-no-hero-art';
 	}
 
 	return $classes;
@@ -222,7 +301,7 @@ add_filter( 'body_class', 'cozy_journal_body_classes' );
  * @return int
  */
 function cozy_journal_excerpt_length() {
-	return 34;
+	return cozy_journal_get_range_mod( 'cozy_journal_excerpt_length', 34, 10, 100 );
 }
 add_filter( 'excerpt_length', 'cozy_journal_excerpt_length', 99 );
 
@@ -250,9 +329,20 @@ function cozy_journal_get_stickers() {
 	);
 	$selected = get_theme_mod( 'cozy_journal_sticker_style', 'floral' );
 
-	return isset( $sets[ $selected ] ) ? $sets[ $selected ] : $sets['floral'];
+	$stickers = isset( $sets[ $selected ] ) ? $sets[ $selected ] : $sets['floral'];
+
+	foreach ( $stickers as $index => $sticker ) {
+		$custom = trim( (string) get_theme_mod( 'cozy_journal_custom_sticker_' . ( $index + 1 ), '' ) );
+		if ( '' !== $custom ) {
+			$stickers[ $index ] = $custom;
+		}
+	}
+
+	return $stickers;
 }
 
+require get_template_directory() . '/inc/theme-options-extra.php';
+require get_template_directory() . '/inc/theme-option-helpers.php';
 require get_template_directory() . '/inc/template-tags.php';
 require get_template_directory() . '/inc/privacy.php';
 require get_template_directory() . '/inc/theme-options.php';

@@ -54,6 +54,23 @@ function cozy_journal_sanitize_range( $input, $setting ) {
 }
 
 /**
+ * Sanitizes a setting by looking up its dedicated options-center schema.
+ *
+ * @param mixed                 $input   Proposed value.
+ * @param WP_Customize_Setting $setting Customizer setting.
+ * @return mixed
+ */
+function cozy_journal_sanitize_schema_option( $input, $setting ) {
+	$fields = cozy_journal_get_all_option_fields();
+
+	if ( ! isset( $fields[ $setting->id ] ) ) {
+		return $setting->default;
+	}
+
+	return cozy_journal_sanitize_theme_option( $input, $fields[ $setting->id ] );
+}
+
+/**
  * Validates the writing path without silently replacing conflicts.
  *
  * @param WP_Error             $validity Current validation result.
@@ -634,6 +651,76 @@ function cozy_journal_customize_register( $wp_customize ) {
 			'type'    => 'checkbox',
 		)
 	);
+
+	/* Register every newer settings-center field that is not already present above. */
+	$schema_sections = cozy_journal_get_theme_option_sections();
+	$section_map     = array(
+		'initial'        => 'cozy_journal_initial_section',
+		'writing'        => 'cozy_journal_writing_section',
+		'global'         => 'cozy_journal_style_section',
+		'header'         => 'cozy_journal_header_section',
+		'home'           => 'cozy_journal_hero_section',
+		'content'        => 'cozy_journal_layout_section',
+		'single'         => 'cozy_journal_single_section',
+		'sidebar_footer' => 'cozy_journal_footer_section',
+		'decorations'    => 'cozy_journal_decorations_section',
+		'messages'       => 'cozy_journal_messages_section',
+	);
+	$section_priority = 60;
+
+	foreach ( $schema_sections as $section_key => $section ) {
+		$customizer_section = $section_map[ $section_key ];
+		if ( ! $wp_customize->get_section( $customizer_section ) ) {
+			$wp_customize->add_section(
+				$customizer_section,
+				array(
+					'title'       => $section['title'],
+					'description' => $section['description'],
+					'panel'       => 'cozy_journal_theme_options',
+					'priority'    => $section_priority,
+				)
+			);
+		}
+		$section_priority += 10;
+
+		foreach ( $section['fields'] as $setting_id => $field ) {
+			if ( $wp_customize->get_setting( $setting_id ) ) {
+				continue;
+			}
+
+			$wp_customize->add_setting(
+				$setting_id,
+				array(
+					'default'           => $field['default'],
+					'sanitize_callback' => 'cozy_journal_sanitize_schema_option',
+				)
+			);
+
+			$control_args = array(
+				'label'       => $field['label'],
+				'description' => isset( $field['description'] ) ? $field['description'] : '',
+				'section'     => $customizer_section,
+				'type'        => in_array( $field['type'], array( 'slug', 'url' ), true ) ? 'text' : $field['type'],
+			);
+
+			if ( isset( $field['choices'] ) ) {
+				$control_args['choices'] = $field['choices'];
+			}
+			if ( in_array( $field['type'], array( 'number', 'range' ), true ) ) {
+				$control_args['input_attrs'] = array(
+					'min'  => $field['min'],
+					'max'  => $field['max'],
+					'step' => $field['step'],
+				);
+			}
+
+			if ( 'color' === $field['type'] ) {
+				$wp_customize->add_control( new WP_Customize_Color_Control( $wp_customize, $setting_id, $control_args ) );
+			} else {
+				$wp_customize->add_control( $setting_id, $control_args );
+			}
+		}
+	}
 
 	if ( isset( $wp_customize->selective_refresh ) ) {
 		$partials = array(

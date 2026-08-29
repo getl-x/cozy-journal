@@ -4,7 +4,7 @@ Theme URI: https://github.com/getl-x/cozy-journal
 Author: GetL-X
 Author URI: https://github.com/getl-x/cozy-journal
 Description: A cozy journal-style WordPress theme for personal blogs, stories and everyday notes.
-Version: 1.4.0
+Version: 1.5.0
 Requires at least: 6.0
 Requires PHP: 7.4
 License: GNU General Public License v2 or later
@@ -55,8 +55,8 @@ body {
 		linear-gradient(rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.24));
 	background-size: 28px 28px, 64px 64px, auto;
 	font-family: var(--journal-body-font);
-	font-size: 16px;
-	line-height: 1.8;
+	font-size: var(--journal-font-size, 16px);
+	line-height: var(--journal-line-height, 1.8);
 	-webkit-font-smoothing: antialiased;
 	text-rendering: optimizeLegibility;
 }
@@ -220,7 +220,7 @@ hr {
 }
 
 .journal-container {
-	width: min(1180px, calc(100% - 40px));
+	width: min(var(--journal-site-width, 1180px), calc(100% - 40px));
 	margin-right: auto;
 	margin-left: auto;
 }
@@ -231,13 +231,14 @@ hr {
 }
 
 .site-main {
-	padding-top: 38px;
-	padding-bottom: 72px;
+	padding-top: var(--journal-page-spacing, 38px);
+	padding-bottom: calc(var(--journal-page-spacing, 38px) * 1.9);
 }
 
 .journal-paper {
 	position: relative;
 	border: 1px solid rgba(101, 76, 62, 0.12);
+	border-style: var(--journal-card-border-style, solid);
 	border-radius: var(--journal-radius);
 	background-color: var(--journal-card);
 	box-shadow: var(--journal-shadow);
@@ -655,7 +656,7 @@ input[type="submit"] {
 	min-height: 44px;
 	padding: 10px 20px;
 	border: 2px solid var(--journal-primary);
-	border-radius: 999px;
+	border-radius: var(--journal-button-radius, 999px);
 	background: var(--journal-primary);
 	box-shadow: 3px 4px 0 rgba(79, 65, 59, 0.15);
 	color: #fff;
@@ -889,7 +890,7 @@ input[type="submit"]:hover {
 	min-width: 0;
 	flex-direction: column;
 	overflow: visible;
-	border: 1px solid rgba(79, 65, 59, 0.12);
+	border: 1px var(--journal-card-border-style, solid) rgba(79, 65, 59, 0.12);
 	border-radius: var(--journal-radius);
 	background: var(--journal-card);
 	box-shadow: var(--journal-shadow-small);
@@ -901,11 +902,11 @@ input[type="submit"]:hover {
 	box-shadow: var(--journal-shadow);
 }
 
-.journal-layout-grid .card-tilt-left {
+.journal-card-tilt.journal-layout-grid .card-tilt-left {
 	transform: rotate(-0.45deg);
 }
 
-.journal-layout-grid .card-tilt-right {
+.journal-card-tilt.journal-layout-grid .card-tilt-right {
 	transform: rotate(0.45deg);
 }
 
@@ -932,7 +933,7 @@ input[type="submit"]:hover {
 	display: block;
 	margin: 13px 13px 0;
 	overflow: hidden;
-	border-radius: calc(var(--journal-radius) - 7px);
+	border-radius: var(--journal-image-radius, 7px);
 	background: #eee4d6;
 }
 
@@ -1062,7 +1063,7 @@ input[type="submit"]:hover {
 
 .content-with-sidebar {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 300px;
+	grid-template-columns: minmax(0, 1fr) var(--journal-sidebar-width, 300px);
 	align-items: start;
 	gap: 38px;
 }
@@ -1307,7 +1308,7 @@ input[type="submit"]:hover {
 }
 
 .entry-content > * {
-	max-width: 760px;
+	max-width: var(--journal-content-width, 760px);
 	margin-right: auto;
 	margin-left: auto;
 }
@@ -1355,7 +1356,7 @@ input[type="submit"]:hover {
 
 .entry-content img,
 .wp-block-image img {
-	border-radius: 7px;
+	border-radius: var(--journal-image-radius, 7px);
 }
 
 .wp-caption,
@@ -1792,7 +1793,7 @@ input[type="submit"]:hover {
    10. WordPress utilities
 -------------------------------------------------------------- */
 
-.sticky .post-card-category::after {
+.journal-sticky-marker .sticky .post-card-category::after {
 	margin-left: 5px;
 	content: "✦";
 }
@@ -1842,17 +1843,314 @@ input[type="submit"]:hover {
 }
 
 /* --------------------------------------------------------------
-   11. Responsive design
+   11. Configurable layout details
+-------------------------------------------------------------- */
+
+.site-header-inner,
+.hero-paper,
+.post-navigation a,
+.widget-area,
+.footer-paper,
+.single-featured-image {
+	border-style: var(--journal-card-border-style, solid);
+}
+
+.hero-tape,
+.card-tape,
+.single-tape,
+.sidebar-tape,
+.footer-tape {
+	opacity: var(--journal-tape-opacity, 1);
+}
+
+.header-search-form {
+	display: flex;
+	width: min(190px, 18vw);
+	min-width: 145px;
+	align-items: stretch;
+	overflow: hidden;
+	border: 1px solid rgba(79, 65, 59, 0.14);
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.72);
+}
+
+.header-search-form label {
+	min-width: 0;
+	flex: 1;
+}
+
+.header-search-form input {
+	width: 100%;
+	height: 100%;
+	padding: 7px 3px 7px 13px;
+	border: 0;
+	outline: 0;
+	background: transparent;
+	color: var(--journal-ink);
+	font-size: 0.78rem;
+}
+
+.header-search-form button {
+	min-width: 38px;
+	min-height: 36px;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	color: var(--journal-primary-dark);
+	font-family: inherit;
+}
+
+.header-search-form button:hover {
+	background: rgba(216, 117, 127, 0.1);
+	box-shadow: none;
+	color: var(--journal-primary-dark);
+	filter: none;
+	transform: none;
+}
+
+.journal-header-layout-centered .site-header-inner {
+	flex-wrap: wrap;
+	justify-content: center;
+	text-align: center;
+}
+
+.journal-header-layout-centered .site-branding {
+	width: 100%;
+	justify-content: center;
+}
+
+.journal-header-layout-centered .primary-navigation {
+	display: flex;
+	justify-content: center;
+}
+
+.journal-header-density-compact .site-header-inner {
+	min-height: 82px;
+	padding-top: 15px;
+	padding-bottom: 15px;
+}
+
+.journal-header-density-compact .site-logo img {
+	width: 48px;
+	max-height: 48px;
+}
+
+.journal-header-density-compact .brand-sticker {
+	width: 45px;
+	height: 45px;
+	flex-basis: 45px;
+}
+
+.journal-sticky-header .site-header {
+	position: sticky;
+	top: 0;
+	z-index: 100;
+}
+
+.admin-bar.journal-sticky-header .site-header {
+	top: 32px;
+}
+
+.journal-hero-layout-centered .hero-paper,
+.journal-hero-layout-text-only .hero-paper,
+.journal-no-hero-art .hero-paper {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.journal-hero-layout-centered .hero-copy,
+.journal-hero-layout-text-only .hero-copy,
+.journal-no-hero-art .hero-copy {
+	width: min(760px, 100%);
+	margin-right: auto;
+	margin-left: auto;
+}
+
+.journal-hero-layout-centered .hero-copy,
+.journal-hero-layout-text-only .hero-copy {
+	text-align: center;
+}
+
+.journal-hero-layout-centered .hero-date,
+.journal-hero-layout-text-only .hero-date,
+.journal-hero-layout-centered .hero-title,
+.journal-hero-layout-text-only .hero-title,
+.journal-hero-layout-centered .hero-description,
+.journal-hero-layout-text-only .hero-description {
+	margin-right: auto;
+	margin-left: auto;
+}
+
+.journal-hero-layout-centered .hero-title::after,
+.journal-hero-layout-text-only .hero-title::after {
+	margin-right: auto;
+	margin-left: auto;
+}
+
+.journal-hero-layout-text-only .hero-polaroid,
+.journal-no-hero-art .hero-polaroid {
+	display: none;
+}
+
+.journal-home-columns-1 .front-page-main .post-card-grid,
+.journal-archive-columns-1 .content-with-sidebar .post-card-grid {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.journal-home-columns-2 .front-page-main .post-card-grid,
+.journal-archive-columns-2 .content-with-sidebar .post-card-grid {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.journal-home-columns-3 .front-page-main .post-card-grid,
+.journal-archive-columns-3 .content-with-sidebar .post-card-grid {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.journal-layout-list .front-page-main .post-card-grid,
+.journal-layout-list .content-with-sidebar .post-card-grid {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.journal-sidebar-left.journal-has-sidebar .content-with-sidebar {
+	grid-template-columns: var(--journal-sidebar-width, 300px) minmax(0, 1fr);
+}
+
+.journal-sidebar-left.journal-has-sidebar .content-column {
+	order: 2;
+}
+
+.journal-sidebar-left.journal-has-sidebar .widget-area {
+	order: 1;
+}
+
+.journal-thumbnail-ratio-wide .post-thumbnail img {
+	aspect-ratio: 16 / 9;
+}
+
+.journal-thumbnail-ratio-landscape .post-thumbnail img {
+	aspect-ratio: 16 / 10;
+}
+
+.journal-thumbnail-ratio-square .post-thumbnail img {
+	aspect-ratio: 1;
+}
+
+.journal-thumbnail-ratio-portrait .post-thumbnail img {
+	aspect-ratio: 4 / 5;
+}
+
+.journal-single-title-left .single-entry-header {
+	text-align: left;
+}
+
+.journal-single-title-left .single-entry-header .entry-title {
+	margin-left: 0;
+}
+
+.journal-single-title-left .single-entry-header .entry-meta {
+	justify-content: flex-start;
+}
+
+.journal-single-image-plain .single-featured-image {
+	padding: 0;
+	border: 0;
+	border-radius: var(--journal-image-radius, 7px);
+	box-shadow: none;
+	transform: none;
+}
+
+.journal-single-image-plain .single-featured-image::before {
+	display: none;
+}
+
+.journal-footer-align-left .footer-paper {
+	text-align: left;
+}
+
+.journal-footer-align-left .footer-navigation ul {
+	justify-content: flex-start;
+}
+
+.journal-link-style-hover .entry-content a:not(.wp-block-button__link) {
+	text-decoration: none;
+}
+
+.journal-link-style-hover .entry-content a:not(.wp-block-button__link):hover {
+	text-decoration: underline;
+}
+
+body.journal-no-background-pattern {
+	background-image: none;
+}
+
+body.journal-no-background-shapes::before,
+body.journal-no-background-shapes::after {
+	display: none;
+}
+
+.journal-no-paper-lines .site-header-inner,
+.journal-no-paper-lines .hero-paper,
+.journal-no-paper-lines .archive-paper,
+.journal-no-paper-lines .single-paper,
+.journal-no-paper-lines .widget-area {
+	background-image: none;
+}
+
+.journal-no-paper-lines .site-header-inner::before {
+	display: none;
+}
+
+.journal-no-footer-lines .footer-paper,
+.journal-no-paper-lines .footer-paper {
+	background-image: none;
+}
+
+.journal-no-hover-motion .journal-post-card,
+.journal-no-hover-motion .post-thumbnail img,
+.journal-no-hover-motion .journal-button,
+.journal-no-hover-motion .wp-block-button__link,
+.journal-no-hover-motion button,
+.journal-no-hover-motion input[type="submit"] {
+	transition: none;
+}
+
+.journal-no-hover-motion .journal-post-card:hover,
+.journal-no-hover-motion .journal-post-card:hover .post-thumbnail img,
+.journal-no-hover-motion .journal-button:hover,
+.journal-no-hover-motion .wp-block-button__link:hover,
+.journal-no-hover-motion button:hover,
+.journal-no-hover-motion input[type="submit"]:hover {
+	filter: none;
+	transform: none;
+}
+
+.entry-summary {
+	color: var(--journal-muted);
+}
+
+/* --------------------------------------------------------------
+   12. Responsive design
 -------------------------------------------------------------- */
 
 @media (max-width: 1040px) {
+	.journal-home-columns-3 .front-page-main .post-card-grid,
+	.journal-archive-columns-3 .content-with-sidebar .post-card-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
 	.header-write-link {
 		display: none;
 	}
 
 	.content-with-sidebar {
-		grid-template-columns: minmax(0, 1fr) 270px;
+		grid-template-columns: minmax(0, 1fr) min(var(--journal-sidebar-width, 300px), 270px);
 		gap: 28px;
+	}
+
+	.journal-sidebar-left.journal-has-sidebar .content-with-sidebar {
+		grid-template-columns: min(var(--journal-sidebar-width, 300px), 270px) minmax(0, 1fr);
 	}
 
 	.hero-paper {
@@ -1873,6 +2171,24 @@ input[type="submit"]:hover {
 @media (max-width: 880px) {
 	.content-with-sidebar {
 		grid-template-columns: 1fr;
+	}
+
+	.journal-sidebar-left.journal-has-sidebar .content-with-sidebar {
+		grid-template-columns: 1fr;
+	}
+
+	.journal-sidebar-left.journal-has-sidebar .content-column,
+	.journal-sidebar-left.journal-has-sidebar .widget-area {
+		order: initial;
+	}
+
+	.site-header-inner {
+		flex-wrap: wrap;
+	}
+
+	.header-search-form {
+		width: 100%;
+		order: 5;
 	}
 
 	.widget-area {
@@ -2014,6 +2330,15 @@ input[type="submit"]:hover {
 		gap: 27px;
 	}
 
+	.journal-home-columns-1 .front-page-main .post-card-grid,
+	.journal-home-columns-2 .front-page-main .post-card-grid,
+	.journal-home-columns-3 .front-page-main .post-card-grid,
+	.journal-archive-columns-1 .content-with-sidebar .post-card-grid,
+	.journal-archive-columns-2 .content-with-sidebar .post-card-grid,
+	.journal-archive-columns-3 .content-with-sidebar .post-card-grid {
+		grid-template-columns: 1fr;
+	}
+
 	.journal-layout-list .journal-post-card {
 		display: block;
 	}
@@ -2036,6 +2361,11 @@ input[type="submit"]:hover {
 		padding: 42px 28px;
 		background-image: linear-gradient(rgba(138, 169, 187, 0.08) 1px, transparent 1px);
 		background-size: 100% 31px;
+	}
+
+	.journal-no-paper-lines .single-paper,
+	.journal-no-paper-lines .hero-paper {
+		background-image: none;
 	}
 
 	.paper-punches {
@@ -2146,6 +2476,17 @@ input[type="submit"]:hover {
 	.footer-paper {
 		padding-right: 22px;
 		padding-left: 22px;
+	}
+}
+
+@media (max-width: 782px) {
+	.admin-bar.journal-sticky-header .site-header {
+		top: 46px;
+	}
+
+	.journal-no-paper-lines .hero-paper,
+	.journal-no-paper-lines .single-paper {
+		background-image: none;
 	}
 }
 

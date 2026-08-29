@@ -18,7 +18,7 @@ $stickers  = cozy_journal_get_stickers();
 				<div class="hero-tape" aria-hidden="true"></div>
 				<div class="hero-copy">
 					<?php if ( get_theme_mod( 'cozy_journal_show_hero_date', true ) ) : ?>
-						<p class="hero-date"><span aria-hidden="true">◷</span> <?php echo esc_html( wp_date( 'n月j日 · l' ) ); ?></p>
+						<p class="hero-date"><span aria-hidden="true">◷</span> <?php echo esc_html( cozy_journal_get_hero_date() ); ?></p>
 					<?php endif; ?>
 					<p class="hero-eyebrow"><?php echo esc_html( get_theme_mod( 'cozy_journal_hero_eyebrow', __( '今天也要记录小确幸', 'cozy-journal' ) ) ); ?></p>
 					<h1 id="journal-hero-title" class="hero-title"><?php echo esc_html( get_theme_mod( 'cozy_journal_hero_title', __( '把日子过成喜欢的样子', 'cozy-journal' ) ) ); ?></h1>
@@ -26,23 +26,27 @@ $stickers  = cozy_journal_get_stickers();
 					<?php
 					$hero_button_text = get_theme_mod( 'cozy_journal_hero_button_text', __( '翻开今天的手账', 'cozy-journal' ) );
 					$hero_button_url  = get_theme_mod( 'cozy_journal_hero_button_url', '#journal-latest' );
+					$hero_button_new_tab = get_theme_mod( 'cozy_journal_hero_button_new_tab', false );
 					if ( $hero_button_text && $hero_button_url ) :
 						?>
-						<a class="hero-button journal-button" href="<?php echo esc_url( $hero_button_url ); ?>"><?php echo esc_html( $hero_button_text ); ?> <span aria-hidden="true">→</span></a>
+						<a class="hero-button journal-button" href="<?php echo esc_url( $hero_button_url ); ?>" <?php echo $hero_button_new_tab ? 'target="_blank" rel="noopener noreferrer"' : ''; ?>><?php echo esc_html( $hero_button_text ); ?> <span aria-hidden="true">→</span></a>
 					<?php endif; ?>
 				</div>
 
-				<div class="hero-polaroid" aria-hidden="true">
-					<div class="polaroid-scene">
-						<span class="scene-sun"></span>
-						<span class="scene-cloud cloud-one"></span>
-						<span class="scene-cloud cloud-two"></span>
-						<span class="scene-hill hill-back"></span>
-						<span class="scene-hill hill-front"></span>
-						<span class="scene-flower">✿</span>
+				<?php if ( get_theme_mod( 'cozy_journal_show_hero_art', true ) ) : ?>
+					<div class="hero-polaroid" aria-hidden="true">
+						<div class="polaroid-scene">
+							<span class="scene-sun"></span>
+							<span class="scene-cloud cloud-one"></span>
+							<span class="scene-cloud cloud-two"></span>
+							<span class="scene-hill hill-back"></span>
+							<span class="scene-hill hill-front"></span>
+							<span class="scene-flower">✿</span>
+						</div>
+						<?php $hero_art_caption = trim( (string) get_theme_mod( 'cozy_journal_hero_art_caption', __( '今日份 · 好心情', 'cozy-journal' ) ) ); ?>
+						<?php if ( '' !== $hero_art_caption ) : ?><p><?php echo esc_html( $hero_art_caption ); ?></p><?php endif; ?>
 					</div>
-					<p><?php esc_html_e( '今日份 · 好心情', 'cozy-journal' ); ?></p>
-				</div>
+				<?php endif; ?>
 
 				<?php if ( get_theme_mod( 'cozy_journal_show_stickers', true ) ) : ?>
 					<div class="hero-stickers" aria-hidden="true">
@@ -55,7 +59,7 @@ $stickers  = cozy_journal_get_stickers();
 		</section>
 	<?php endif; ?>
 
-	<?php if ( 'page' === get_option( 'show_on_front' ) && have_posts() ) : ?>
+	<?php if ( get_theme_mod( 'cozy_journal_show_front_page_content', true ) && 'page' === get_option( 'show_on_front' ) && have_posts() ) : ?>
 		<section class="front-page-intro journal-container">
 			<?php
 			while ( have_posts() ) :
@@ -77,26 +81,32 @@ $stickers  = cozy_journal_get_stickers();
 		</section>
 	<?php endif; ?>
 
+	<?php if ( get_theme_mod( 'cozy_journal_show_latest_section', true ) ) : ?>
 	<section id="journal-latest" class="latest-notes journal-container" aria-labelledby="latest-notes-title">
 		<header class="section-heading">
 			<div>
-				<p class="section-kicker"><?php esc_html_e( 'Recently in my journal', 'cozy-journal' ); ?></p>
-				<h2 id="latest-notes-title"><?php esc_html_e( '最近写下的小日子', 'cozy-journal' ); ?></h2>
+				<p class="section-kicker"><?php echo esc_html( get_theme_mod( 'cozy_journal_latest_kicker', __( 'Recently in my journal', 'cozy-journal' ) ) ); ?></p>
+				<h2 id="latest-notes-title"><?php echo esc_html( get_theme_mod( 'cozy_journal_latest_title', __( '最近写下的小日子', 'cozy-journal' ) ) ); ?></h2>
 			</div>
-			<span class="heading-doodle" aria-hidden="true">〰✎</span>
+			<?php if ( get_theme_mod( 'cozy_journal_show_latest_doodle', true ) ) : ?>
+				<span class="heading-doodle" aria-hidden="true"><?php echo esc_html( get_theme_mod( 'cozy_journal_latest_doodle', '〰✎' ) ); ?></span>
+			<?php endif; ?>
 		</header>
 
 		<div class="post-card-grid">
 			<?php
 			if ( 'page' === get_option( 'show_on_front' ) ) {
-				$cozy_journal_home_posts_count = absint( get_theme_mod( 'cozy_journal_home_posts_count', 6 ) );
-				$cozy_journal_home_posts_count = min( 12, max( 3, $cozy_journal_home_posts_count ) );
+				$cozy_journal_home_posts_count = cozy_journal_get_range_mod( 'cozy_journal_home_posts_count', 6, 3, 12 );
+				$cozy_journal_order_args       = cozy_journal_get_home_order_args();
 				$cozy_journal_posts = new WP_Query(
-					array(
+					array_merge(
+						array(
 						'post_type'           => 'post',
 						'post_status'         => 'publish',
 						'posts_per_page'      => $cozy_journal_home_posts_count,
-						'ignore_sticky_posts' => false,
+						'ignore_sticky_posts' => (bool) get_theme_mod( 'cozy_journal_home_ignore_sticky', false ),
+						),
+						$cozy_journal_order_args
 					)
 				);
 			} else {
@@ -121,6 +131,7 @@ $stickers  = cozy_journal_get_stickers();
 		wp_reset_postdata();
 		?>
 	</section>
+	<?php endif; ?>
 </main>
 
 <?php

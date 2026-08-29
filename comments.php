@@ -56,13 +56,12 @@ if ( post_password_required() ) {
 	<?php
 	comment_form(
 		array(
-			'title_reply'        => __( '留一张小纸条吧', 'cozy-journal' ),
+			'title_reply'        => get_theme_mod( 'cozy_journal_comment_reply_title', __( '留一张小纸条吧', 'cozy-journal' ) ),
 			'title_reply_before' => '<h2 id="reply-title" class="comment-reply-title">',
 			'title_reply_after'  => '</h2>',
-			'label_submit'       => __( '贴上纸条', 'cozy-journal' ),
+			'label_submit'       => get_theme_mod( 'cozy_journal_comment_submit_text', __( '贴上纸条', 'cozy-journal' ) ),
 			'class_submit'       => 'submit journal-button',
 		)
 	);
 	?>
 </section>
-

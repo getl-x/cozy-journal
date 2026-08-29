@@ -5,7 +5,7 @@
  * @package Cozy_Journal
  */
 
-if ( ! get_theme_mod( 'cozy_journal_show_sidebar', true ) || ! is_active_sidebar( 'sidebar-1' ) ) {
+if ( ! cozy_journal_should_show_sidebar() ) {
 	return;
 }
 ?>
@@ -14,4 +14,3 @@ if ( ! get_theme_mod( 'cozy_journal_show_sidebar', true ) || ! is_active_sidebar
 	<div class="sidebar-tape" aria-hidden="true"></div>
 	<?php dynamic_sidebar( 'sidebar-1' ); ?>
 </aside>
-

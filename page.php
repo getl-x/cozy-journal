@@ -15,13 +15,13 @@ get_header();
 			the_post();
 			?>
 			<article id="post-<?php the_ID(); ?>" <?php post_class( 'journal-paper single-paper page-paper' ); ?>>
-				<div class="paper-punches" aria-hidden="true"><i></i><i></i><i></i></div>
+				<?php if ( get_theme_mod( 'cozy_journal_show_paper_punches', true ) ) : ?><div class="paper-punches" aria-hidden="true"><i></i><i></i><i></i></div><?php endif; ?>
 				<header class="entry-header single-entry-header">
-					<p class="section-kicker"><?php esc_html_e( 'A little page', 'cozy-journal' ); ?></p>
+					<?php if ( get_theme_mod( 'cozy_journal_show_page_kicker', true ) ) : ?><p class="section-kicker"><?php echo esc_html( get_theme_mod( 'cozy_journal_page_kicker', __( 'A little page', 'cozy-journal' ) ) ); ?></p><?php endif; ?>
 					<?php the_title( '<h1 class="entry-title">', '</h1>' ); ?>
 				</header>
 
-				<?php if ( get_theme_mod( 'cozy_journal_show_featured_images', true ) && has_post_thumbnail() ) : ?>
+				<?php if ( cozy_journal_should_show_featured_image( 'page' ) && has_post_thumbnail() ) : ?>
 					<div class="single-featured-image"><?php the_post_thumbnail( 'full' ); ?></div>
 				<?php endif; ?>
 
@@ -38,12 +38,12 @@ get_header();
 				</div>
 
 				<footer class="entry-footer">
-					<?php edit_post_link( esc_html__( '编辑这一页', 'cozy-journal' ) ); ?>
+					<?php if ( get_theme_mod( 'cozy_journal_show_edit_link', true ) ) : ?><?php edit_post_link( esc_html__( '编辑这一页', 'cozy-journal' ) ); ?><?php endif; ?>
 				</footer>
 			</article>
 
 			<?php
-			if ( comments_open() || get_comments_number() ) {
+			if ( get_theme_mod( 'cozy_journal_show_comments_on_pages', true ) && ( comments_open() || get_comments_number() ) ) {
 				comments_template();
 			}
 		endwhile;
@@ -55,4 +55,3 @@ get_header();
 
 <?php
 get_footer();
-

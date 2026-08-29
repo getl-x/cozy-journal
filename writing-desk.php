@@ -7,7 +7,15 @@
 
 get_header();
 
-$writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下此刻，剩下的交给时间收藏。', 'cozy-journal' ) );
+$writing_intro               = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下此刻，剩下的交给时间收藏。', 'cozy-journal' ) );
+$writing_back_text           = get_theme_mod( 'cozy_journal_writing_back_text', __( '返回手账首页', 'cozy-journal' ) );
+$writing_title_placeholder   = get_theme_mod( 'cozy_journal_writing_title_placeholder', __( '给这一页起个名字……', 'cozy-journal' ) );
+$writing_editor_prompt       = get_theme_mod( 'cozy_journal_writing_editor_prompt', __( '写下故事、插入照片，也可以切换到文本模式整理 HTML。', 'cozy-journal' ) );
+$writing_excerpt_placeholder = get_theme_mod( 'cozy_journal_writing_excerpt_placeholder', __( '用一两句话介绍这篇文章……', 'cozy-journal' ) );
+$writing_editor_height       = cozy_journal_get_range_mod( 'cozy_journal_writing_editor_height', 520, 320, 800 );
+$writing_show_excerpt        = get_theme_mod( 'cozy_journal_writing_show_excerpt', true );
+$writing_show_recent         = get_theme_mod( 'cozy_journal_writing_show_recent', true );
+$writing_recent_count        = cozy_journal_get_range_mod( 'cozy_journal_writing_recent_count', 6, 3, 12 );
 ?>
 
 <main id="primary" class="site-main writing-desk-main">
@@ -46,7 +54,7 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 			$selected_cats      = $can_assign_categories ? ( $writing_post ? wp_get_post_categories( $post_id ) : array( absint( get_option( 'default_category' ) ) ) ) : array();
 			$post_tags          = $can_assign_tags && $writing_post ? wp_get_post_tags( $post_id, array( 'fields' => 'names' ) ) : array();
 			$tag_string         = implode( '，', $post_tags );
-			$comments_open      = $writing_post ? 'open' === $writing_post->comment_status : true;
+			$comments_open      = $writing_post ? 'open' === $writing_post->comment_status : (bool) get_theme_mod( 'cozy_journal_writing_default_comments', true );
 			$remove_thumbnail     = false;
 			$thumbnail_url        = $writing_post && has_post_thumbnail( $post_id ) ? get_the_post_thumbnail_url( $post_id, 'medium_large' ) : '';
 			$manual_status        = $writing_post && in_array( $post_status, array( 'publish', 'private', 'future' ), true );
@@ -96,21 +104,21 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 				$comments_open    = ! empty( $form_state['comments_open'] );
 				$remove_thumbnail = ! empty( $form_state['remove_thumbnail'] );
 			}
-			$recent_posts = get_posts(
+			$recent_posts = $writing_show_recent ? get_posts(
 				array(
 					'author'         => get_current_user_id(),
 					'post_type'      => 'post',
 					'post_status'    => array( 'draft', 'pending', 'publish', 'future', 'private' ),
-					'posts_per_page' => 6,
+					'posts_per_page' => $writing_recent_count,
 					'orderby'        => 'modified',
 					'order'          => 'DESC',
 				)
-			);
+			) : array();
 			?>
 
 			<div class="writing-desk-topbar">
 				<div>
-					<a class="writing-back-link" href="<?php echo esc_url( home_url( '/' ) ); ?>"><span aria-hidden="true">←</span> <?php esc_html_e( '返回手账首页', 'cozy-journal' ); ?></a>
+					<a class="writing-back-link" href="<?php echo esc_url( home_url( '/' ) ); ?>"><span aria-hidden="true">←</span> <?php echo esc_html( $writing_back_text ); ?></a>
 					<p><?php echo esc_html( $writing_intro ); ?></p>
 				</div>
 				<div class="writing-session">
@@ -169,11 +177,11 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 						</div>
 
 						<label class="screen-reader-text" for="cozy-journal-title"><?php esc_html_e( '文章标题', 'cozy-journal' ); ?></label>
-						<input id="cozy-journal-title" class="writing-title-input" type="text" name="cozy_journal_title" value="<?php echo esc_attr( $post_title ); ?>" placeholder="<?php esc_attr_e( '给这一页起个名字……', 'cozy-journal' ); ?>" autocomplete="off">
+						<input id="cozy-journal-title" class="writing-title-input" type="text" name="cozy_journal_title" value="<?php echo esc_attr( $post_title ); ?>" placeholder="<?php echo esc_attr( $writing_title_placeholder ); ?>" autocomplete="off">
 
 						<div class="writing-editor-intro">
 							<span aria-hidden="true">✦</span>
-							<p><?php esc_html_e( '写下故事、插入照片，也可以切换到文本模式整理 HTML。', 'cozy-journal' ); ?></p>
+							<p><?php echo esc_html( $writing_editor_prompt ); ?></p>
 						</div>
 
 						<div class="writing-wordpress-editor">
@@ -183,7 +191,7 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 								'cozy_journal_content',
 								array(
 									'textarea_name' => 'cozy_journal_content',
-									'editor_height' => 520,
+									'editor_height' => $writing_editor_height,
 									'media_buttons' => current_user_can( 'upload_files' ),
 									'quicktags'     => true,
 									'teeny'         => false,
@@ -202,11 +210,15 @@ $writing_intro = get_theme_mod( 'cozy_journal_writing_intro', __( '安静写下�
 						</div>
 					</section>
 
+					<?php if ( $writing_show_excerpt ) : ?>
 					<section class="writing-excerpt-paper">
 						<label for="cozy-journal-excerpt"><?php esc_html_e( '这一页的简短摘要', 'cozy-journal' ); ?></label>
 						<p><?php esc_html_e( '可以留空，WordPress 会从正文自动截取。', 'cozy-journal' ); ?></p>
-						<textarea id="cozy-journal-excerpt" name="cozy_journal_excerpt" rows="4" placeholder="<?php esc_attr_e( '用一两句话介绍这篇文章……', 'cozy-journal' ); ?>"><?php echo esc_textarea( $post_excerpt ); ?></textarea>
+						<textarea id="cozy-journal-excerpt" name="cozy_journal_excerpt" rows="4" placeholder="<?php echo esc_attr( $writing_excerpt_placeholder ); ?>"><?php echo esc_textarea( $post_excerpt ); ?></textarea>
 					</section>
+					<?php else : ?>
+						<input type="hidden" name="cozy_journal_excerpt" value="<?php echo esc_attr( $post_excerpt ); ?>">
+					<?php endif; ?>
 				</div>
 
 				<aside class="writing-settings-column">
