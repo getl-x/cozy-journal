@@ -430,12 +430,12 @@
 	border-color: var(--journal-primary);
 	background: var(--journal-primary);
 	box-shadow: 3px 4px 0 rgba(79, 65, 59, 0.13);
-	color: #fff;
+	color: var(--journal-primary-contrast);
 }
 
 .writing-publish-button:hover {
 	background: var(--journal-primary-dark);
-	color: #fff;
+	color: var(--journal-primary-dark-contrast);
 }
 
 .writing-preview-note {

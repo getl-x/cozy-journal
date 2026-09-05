@@ -1,14 +1,23 @@
-# Local build, preview and backup artifacts
-/releases/
+# Local project structure; publish only the theme files at repository root.
 /backups/
-/previews/
-/build/
-/dist/
-*.zip
-release-info.txt
-build-release.ps1
-generate-theme-screenshot.py
-__pycache__/
-*.py[cod]
+/releases/
+/source/
+/build-release.ps1
+
+# Theme-setting exports can contain private names, paths, links or copy.
+/cozy-journal-private-backup-*.json
+/cozy-journal-style-template-*.json
+
+# Local editor, operating-system and temporary files.
 .DS_Store
 Thumbs.db
+Desktop.ini
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+__pycache__/
+*.py[cod]
+.idea/
+.vscode/

@@ -63,6 +63,28 @@
 		statusElement.dataset.state = state || '';
 	}
 
+	function readAjaxResponse( response, fallbackMessage ) {
+		return response.text().then( function ( body ) {
+			const normalizedBody = body.trim();
+			if ( response.status === 401 || normalizedBody === '0' || normalizedBody === '-1' ) {
+				throw new Error( cozyJournalWriting.labels.sessionExpired );
+			}
+
+			let payload;
+			try {
+				payload = JSON.parse( body );
+			} catch ( error ) {
+				throw new Error( fallbackMessage );
+			}
+
+			if ( payload && payload.data && payload.data.code === 'session_expired' ) {
+				throw new Error( payload.data.message || cozyJournalWriting.labels.sessionExpired );
+			}
+
+			return payload;
+		} );
+	}
+
 	function setCleanStatus( message, state ) {
 		cleanStatus = {
 			message: message,
@@ -155,6 +177,11 @@
 
 		const requestVersion = editVersion;
 		let shouldRetry = false;
+		const abortController = typeof window.AbortController === 'function' ? new window.AbortController() : null;
+		const requestTimeout = Math.max( 1000, Number( cozyJournalWriting.autosaveTimeout ) || 15000 );
+		const timeoutId = abortController ? window.setTimeout( function () {
+			abortController.abort();
+		}, requestTimeout ) : 0;
 		saving = true;
 		setActionButtonsDisabled( true );
 		setStatus( cozyJournalWriting.labels.saving, 'saving' );
@@ -166,13 +193,18 @@
 		data.delete( 'cozy_journal_submit' );
 		data.delete( 'cozy_journal_featured_image' );
 
-		fetch( cozyJournalWriting.ajaxUrl, {
+		const requestOptions = {
 			method: 'POST',
 			credentials: 'same-origin',
 			body: data
-		} )
+		};
+		if ( abortController ) {
+			requestOptions.signal = abortController.signal;
+		}
+
+		fetch( cozyJournalWriting.ajaxUrl, requestOptions )
 			.then( function ( response ) {
-				return response.json();
+				return readAjaxResponse( response, cozyJournalWriting.labels.failed );
 			} )
 			.then( function ( response ) {
 				if ( ! response.success ) {
@@ -208,9 +240,16 @@
 				}
 			} )
 			.catch( function ( error ) {
+				if ( error.name === 'AbortError' ) {
+					setStatus( cozyJournalWriting.labels.timeout, 'error' );
+					return;
+				}
 				setStatus( error.message || cozyJournalWriting.labels.failed, 'error' );
 			} )
 			.finally( function () {
+				if ( timeoutId ) {
+					window.clearTimeout( timeoutId );
+				}
 				saving = false;
 				setActionButtonsDisabled( false );
 				if ( shouldRetry ) {
@@ -385,7 +424,7 @@
 			body: data
 		} )
 			.then( function ( response ) {
-				return response.json();
+				return readAjaxResponse( response, cozyJournalWriting.labels.lockFailed );
 			} )
 			.then( function ( response ) {
 				if ( ! response.success ) {

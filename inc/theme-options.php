@@ -528,6 +528,9 @@ function cozy_journal_sanitize_theme_option( $value, $field ) {
 			return in_array( $value, array( 1, '1', 'true', 'yes', 'on' ), true );
 
 		case 'color':
+			if ( ! is_string( $value ) ) {
+				return $default;
+			}
 			$color = sanitize_hex_color( $value );
 			return $color ? $color : $default;
 

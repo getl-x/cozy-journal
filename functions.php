@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'COZY_JOURNAL_VERSION' ) ) {
-	define( 'COZY_JOURNAL_VERSION', '1.6.0' );
+	define( 'COZY_JOURNAL_VERSION', '1.6.1' );
 }
 
 if ( ! defined( 'COZY_JOURNAL_NAME' ) ) {
@@ -164,9 +164,83 @@ add_filter( 'get_comment_author_link', 'cozy_journal_comment_author_link', 10, 3
  * @return string
  */
 function cozy_journal_get_color( $setting, $default ) {
-	$color = sanitize_hex_color( get_theme_mod( $setting, $default ) );
+	$value = get_theme_mod( $setting, $default );
+	if ( ! is_string( $value ) ) {
+		return $default;
+	}
+
+	$color = sanitize_hex_color( $value );
 
 	return $color ? $color : $default;
+}
+
+/**
+ * Darkens a hexadecimal color by mixing it with black.
+ *
+ * @param string $color  Hexadecimal color.
+ * @param int    $amount Percentage of black to mix in.
+ * @return string
+ */
+function cozy_journal_darken_color( $color, $amount = 22 ) {
+	if ( ! is_string( $color ) ) {
+		return '#000000';
+	}
+
+	$color = sanitize_hex_color( $color );
+	if ( ! $color ) {
+		return '#000000';
+	}
+
+	$hex = substr( $color, 1 );
+	if ( 3 === strlen( $hex ) ) {
+		$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+	}
+
+	$factor = ( 100 - min( 100, absint( $amount ) ) ) / 100;
+	return sprintf(
+		'#%02x%02x%02x',
+		(int) round( hexdec( substr( $hex, 0, 2 ) ) * $factor ),
+		(int) round( hexdec( substr( $hex, 2, 2 ) ) * $factor ),
+		(int) round( hexdec( substr( $hex, 4, 2 ) ) * $factor )
+	);
+}
+
+/**
+ * Chooses black or white text with a WCAG contrast ratio of at least 4.5:1.
+ *
+ * @param string $color Hexadecimal background color.
+ * @return string
+ */
+function cozy_journal_contrast_text_color( $color ) {
+	if ( ! is_string( $color ) ) {
+		return '#000000';
+	}
+
+	$color = sanitize_hex_color( $color );
+	if ( ! $color ) {
+		return '#000000';
+	}
+
+	$hex = substr( $color, 1 );
+	if ( 3 === strlen( $hex ) ) {
+		$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+	}
+
+	$channels = array(
+		hexdec( substr( $hex, 0, 2 ) ) / 255,
+		hexdec( substr( $hex, 2, 2 ) ) / 255,
+		hexdec( substr( $hex, 4, 2 ) ) / 255,
+	);
+	foreach ( $channels as $index => $channel ) {
+		$channels[ $index ] = $channel <= 0.03928
+			? $channel / 12.92
+			: pow( ( $channel + 0.055 ) / 1.055, 2.4 );
+	}
+
+	$luminance      = ( 0.2126 * $channels[0] ) + ( 0.7152 * $channels[1] ) + ( 0.0722 * $channels[2] );
+	$white_contrast = 1.05 / ( $luminance + 0.05 );
+
+	return $white_contrast >= 4.5 ? '#ffffff' : '#000000';
 }
 
 /**
@@ -176,6 +250,9 @@ function cozy_journal_get_color( $setting, $default ) {
  */
 function cozy_journal_custom_properties() {
 	$primary       = cozy_journal_get_color( 'cozy_journal_primary_color', '#d8757f' );
+	$primary_dark  = cozy_journal_darken_color( $primary );
+	$primary_contrast = cozy_journal_contrast_text_color( $primary );
+	$primary_dark_contrast = cozy_journal_contrast_text_color( $primary_dark );
 	$secondary     = cozy_journal_get_color( 'cozy_journal_secondary_color', '#d9a441' );
 	$paper         = cozy_journal_get_color( 'cozy_journal_paper_color', '#f7efe2' );
 	$card          = cozy_journal_get_color( 'cozy_journal_card_color', '#fffdf8' );
@@ -222,7 +299,7 @@ function cozy_journal_custom_properties() {
 	$border_style   = cozy_journal_get_choice_mod( 'cozy_journal_card_border_style', 'solid', array( 'solid', 'dashed', 'none' ) );
 
 	$css = sprintf(
-		':root{--journal-primary:%1$s;--journal-primary-dark:%1$s;--journal-secondary:%2$s;--journal-paper:%3$s;--journal-card:%4$s;--journal-ink:%5$s;--journal-muted:%6$s;--journal-radius:%7$dpx;--journal-heading-font:%8$s;--journal-body-font:%9$s;--journal-font-size:%10$dpx;--journal-line-height:%11$.2F;--journal-site-width:%12$dpx;--journal-content-width:%13$dpx;--journal-page-spacing:%14$dpx;--journal-image-radius:%15$dpx;--journal-sidebar-width:%16$dpx;--journal-tape-opacity:%17$.2F;--journal-button-radius:%18$s;--journal-shadow:%19$s;--journal-shadow-small:%20$s;--journal-card-border-style:%21$s;}',
+		':root{--journal-primary:%1$s;--journal-primary-dark:%22$s;--journal-primary-contrast:%23$s;--journal-primary-dark-contrast:%24$s;--journal-secondary:%2$s;--journal-paper:%3$s;--journal-card:%4$s;--journal-ink:%5$s;--journal-muted:%6$s;--journal-radius:%7$dpx;--journal-heading-font:%8$s;--journal-body-font:%9$s;--journal-font-size:%10$dpx;--journal-line-height:%11$.2F;--journal-site-width:%12$dpx;--journal-content-width:%13$dpx;--journal-page-spacing:%14$dpx;--journal-image-radius:%15$dpx;--journal-sidebar-width:%16$dpx;--journal-tape-opacity:%17$.2F;--journal-button-radius:%18$s;--journal-shadow:%19$s;--journal-shadow-small:%20$s;--journal-card-border-style:%21$s;}',
 		esc_attr( $primary ),
 		esc_attr( $secondary ),
 		esc_attr( $paper ),
@@ -243,7 +320,10 @@ function cozy_journal_custom_properties() {
 		$button_radii[ $button_shape ],
 		$shadow_sets[ $shadow_style ][0],
 		$shadow_sets[ $shadow_style ][1],
-		$border_style
+		$border_style,
+		esc_attr( $primary_dark ),
+		esc_attr( $primary_contrast ),
+		esc_attr( $primary_dark_contrast )
 	);
 
 	if ( ! get_theme_mod( 'cozy_journal_smooth_scroll', true ) ) {

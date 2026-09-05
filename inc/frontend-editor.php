@@ -689,12 +689,15 @@ function cozy_journal_writing_assets() {
 				'postStatus'       => $post_status,
 				'postLocked'       => $post_locked,
 				'autosaveInterval' => $interval,
+				'autosaveTimeout'  => 15000,
 				'lockInterval'     => 60,
 				'writeUrl'         => cozy_journal_get_write_url(),
 				'labels'           => array(
 					'saving'        => __( '正在悄悄保存……', 'cozy-journal' ),
 					'saved'         => __( '已保存到草稿箱', 'cozy-journal' ),
 					'failed'        => __( '自动保存失败，请手动保存', 'cozy-journal' ),
+					'timeout'       => __( '自动保存请求超时，请检查网络后重试', 'cozy-journal' ),
+					'sessionExpired' => __( '登录状态已过期，请刷新页面后重新登录', 'cozy-journal' ),
 					'unsaved'       => __( '有尚未保存的修改', 'cozy-journal' ),
 					'mediaUnsaved'  => __( '文字已保存，特色图片仍需手动保存', 'cozy-journal' ),
 					'changedAgain'  => __( '保存期间又有新修改，正在等待下一次保存', 'cozy-journal' ),
@@ -817,16 +820,34 @@ function cozy_journal_prepare_writing_post_data( $input, $post_id, $post_status,
  * that are not exposed by the front-end writing form.
  *
  * @param array $post_data Sanitized, unslashed post data.
- * @param int   $post_id   Existing post ID, if any.
+ * @param int  $post_id         Existing post ID, if any.
+ * @param bool $create_revision Whether WordPress should create a revision.
  * @return int|WP_Error
  */
-function cozy_journal_persist_writing_post( $post_data, $post_id = 0 ) {
+function cozy_journal_persist_writing_post( $post_data, $post_id = 0, $create_revision = true ) {
 	$post_id   = absint( $post_id );
 	$post_data = wp_slash( $post_data );
 
 	if ( $post_id ) {
 		$post_data['ID'] = $post_id;
-		return wp_update_post( $post_data, true );
+		if ( $create_revision ) {
+			return wp_update_post( $post_data, true );
+		}
+
+		$revision_priority = has_action( 'post_updated', 'wp_save_post_revision' );
+		if ( false !== $revision_priority ) {
+			remove_action( 'post_updated', 'wp_save_post_revision', $revision_priority );
+		}
+
+		try {
+			$result = wp_update_post( $post_data, true );
+		} finally {
+			if ( false !== $revision_priority ) {
+				add_action( 'post_updated', 'wp_save_post_revision', $revision_priority, 3 );
+			}
+		}
+
+		return $result;
 	}
 
 	return wp_insert_post( $post_data, true );
@@ -980,10 +1001,32 @@ function cozy_journal_save_frontend_post() {
 add_action( 'admin_post_cozy_journal_save_frontend_post', 'cozy_journal_save_frontend_post' );
 
 /**
+ * Sends a consistent JSON response when the writing session has expired.
+ */
+function cozy_journal_frontend_ajax_session_expired() {
+	wp_send_json_error(
+		array(
+			'code'    => 'session_expired',
+			'message' => __( '登录状态已过期，请刷新页面后重新登录。', 'cozy-journal' ),
+		),
+		401
+	);
+}
+
+/**
+ * Verifies the writing-desk AJAX nonce without returning WordPress's plain -1 response.
+ */
+function cozy_journal_verify_frontend_ajax_request() {
+	if ( ! is_user_logged_in() || false === check_ajax_referer( 'cozy_journal_frontend_autosave', false, false ) ) {
+		cozy_journal_frontend_ajax_session_expired();
+	}
+}
+
+/**
  * Autosaves new, draft and pending posts from the writing desk.
  */
 function cozy_journal_frontend_autosave() {
-	check_ajax_referer( 'cozy_journal_frontend_autosave' );
+	cozy_journal_verify_frontend_ajax_request();
 
 	if ( ! cozy_journal_writing_desk_enabled() || ! is_user_logged_in() ) {
 		wp_send_json_error( array( 'message' => __( '没有写作权限。', 'cozy-journal' ) ), 403 );
@@ -1023,7 +1066,7 @@ function cozy_journal_frontend_autosave() {
 		wp_send_json_error( array( 'message' => $post_data->get_error_message() ), 400 );
 	}
 
-	$saved_post_id = cozy_journal_persist_writing_post( $post_data, $post_id );
+	$saved_post_id = cozy_journal_persist_writing_post( $post_data, $post_id, false );
 	if ( is_wp_error( $saved_post_id ) ) {
 		wp_send_json_error( array( 'message' => __( '草稿自动保存失败。', 'cozy-journal' ) ), 500 );
 	}
@@ -1040,12 +1083,13 @@ function cozy_journal_frontend_autosave() {
 	);
 }
 add_action( 'wp_ajax_cozy_journal_frontend_autosave', 'cozy_journal_frontend_autosave' );
+add_action( 'wp_ajax_nopriv_cozy_journal_frontend_autosave', 'cozy_journal_frontend_ajax_session_expired' );
 
 /**
  * Refreshes the current user's lock while the writing desk remains open.
  */
 function cozy_journal_frontend_refresh_lock() {
-	check_ajax_referer( 'cozy_journal_frontend_autosave' );
+	cozy_journal_verify_frontend_ajax_request();
 
 	if ( ! cozy_journal_writing_desk_enabled() || ! is_user_logged_in() ) {
 		wp_send_json_error( array( 'message' => __( '没有写作权限。', 'cozy-journal' ) ), 403 );
@@ -1069,3 +1113,4 @@ function cozy_journal_frontend_refresh_lock() {
 	wp_send_json_success();
 }
 add_action( 'wp_ajax_cozy_journal_frontend_refresh_lock', 'cozy_journal_frontend_refresh_lock' );
+add_action( 'wp_ajax_nopriv_cozy_journal_frontend_refresh_lock', 'cozy_journal_frontend_ajax_session_expired' );

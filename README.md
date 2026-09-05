@@ -2,7 +2,7 @@
 
 Cozy Journal 是一款经典 WordPress 手账主题，以纸张、胶带、贴纸和卡片为主要视觉元素。主题不加载外部字体或装饰图片，核心展示与交互由 PHP、CSS、JavaScript 和字符图案完成。
 
-- 版本：`1.6.0`
+- 版本：`1.6.1`
 - 作者：`GetL-X`
 - 来源：<https://github.com/getl-x/cozy-journal>
 - 许可证：GNU GPL v2 or later
@@ -18,7 +18,7 @@ Cozy Journal 是一款经典 WordPress 手账主题，以纸张、胶带、贴�
 
 ## 设置中心
 
-v1.6.0 共提供 166 个设置，分为以下区域：
+v1.6.1 共提供 166 个设置，分为以下区域：
 
 - 品牌与来源
 - 初始设置
@@ -96,7 +96,7 @@ v1.6.0 共提供 166 个设置，分为以下区域：
 文件名固定为版本化名称，不包含导出时间：
 
 ```text
-cozy-journal-private-backup-v1.6.0.json
+cozy-journal-private-backup-v1.6.1.json
 ```
 
 ### 脱敏样式模板
@@ -104,7 +104,7 @@ cozy-journal-private-backup-v1.6.0.json
 只包含复选框、颜色、数值、范围和选择项，不包含自由文本、长文本、路径或 URL，适合分享主题布局与外观。
 
 ```text
-cozy-journal-style-template-v1.6.0.json
+cozy-journal-style-template-v1.6.1.json
 ```
 
 两种 JSON 都保留 `theme`、`version`、`export_type` 和 `settings`，不写入本地导出时间。导入功能继续兼容旧版有效备份格式，并只接收当前主题已知的设置键。

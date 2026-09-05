@@ -4,7 +4,7 @@ Theme URI: https://github.com/getl-x/cozy-journal
 Author: GetL-X
 Author URI: https://github.com/getl-x/cozy-journal
 Description: A cozy journal-style WordPress theme for personal blogs, stories and everyday notes.
-Version: 1.6.0
+Version: 1.6.1
 Requires at least: 6.0
 Requires PHP: 7.4
 License: GNU General Public License v2 or later
@@ -20,6 +20,8 @@ Tags: blog, custom-colors, custom-logo, custom-menu, featured-images, threaded-c
 :root {
 	--journal-primary: #d8757f;
 	--journal-primary-dark: #a74f5a;
+	--journal-primary-contrast: #000;
+	--journal-primary-dark-contrast: #fff;
 	--journal-secondary: #d9a441;
 	--journal-paper: #f7efe2;
 	--journal-card: #fffdf8;
@@ -477,7 +479,7 @@ hr {
 .header-write-link:hover,
 .header-write-link[aria-current="page"] {
 	background: var(--journal-primary);
-	color: #fff;
+	color: var(--journal-primary-contrast);
 }
 
 .menu-toggle {
@@ -659,7 +661,7 @@ input[type="submit"] {
 	border-radius: var(--journal-button-radius, 999px);
 	background: var(--journal-primary);
 	box-shadow: 3px 4px 0 rgba(79, 65, 59, 0.15);
-	color: #fff;
+	color: var(--journal-primary-contrast);
 	font-family: var(--journal-heading-font);
 	font-weight: 700;
 	line-height: 1.3;
@@ -1138,7 +1140,7 @@ input[type="submit"]:hover {
 .page-numbers:hover {
 	border-color: var(--journal-primary);
 	background: var(--journal-primary);
-	color: #fff;
+	color: var(--journal-primary-contrast);
 }
 
 .search-form {
